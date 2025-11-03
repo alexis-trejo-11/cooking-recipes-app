@@ -3,6 +3,7 @@ from typing import Optional, List, Set
 from enum import Enum
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -17,7 +18,32 @@ class IngredientId:
 
 @dataclass(frozen=True)
 class UserId:
+    """Value Object for User ID"""
+
     value: int = field(default=0)
+
+    def __post_init__(self):
+        if not isinstance(self.value, int) or self.value < 0:
+            raise ValueError("User ID must be a non-negative integer")
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, UserId):
+            return False
+        return self.value == other.value
+
+    def __hash__(self) -> int:
+        return hash(self.value)
+
+    @classmethod
+    def from_string(cls, value: str) -> "UserId":
+        """Create UserId from string"""
+        try:
+            return cls(int(value))
+        except (ValueError, TypeError):
+            raise ValueError(f"Cannot create UserId from string: {value}")
 
 
 @dataclass(frozen=True)
@@ -29,9 +55,9 @@ class Quantity:
         if self.value < 0:
             raise ValueError("Quantity value cannot be negative")
 
-        def scale(self, factor: Decimal) -> "Quantity":
-            """Scale quantity by a factor (for serving adjustments)"""
-            return Quantity(value=self.value * factor, unit=self.unit)
+    def scale(self, factor: Decimal) -> "Quantity":
+        """Scale quantity by a factor (for serving adjustments)"""
+        return Quantity(value=self.value * factor, unit=self.unit)
 
 
 @dataclass(frozen=True)
@@ -92,3 +118,14 @@ class Step:
     def __post_init__(self):
         if not self.description.strip():
             raise ValueError("Step description cannot be empty")
+
+
+@dataclass(frozen=True)
+class Tag:
+    name: str  # "spicy", "vegetarian", "dessert", "quick"
+
+    def __post_init__(self):
+        if not self.name.strip():
+            raise ValueError("Tag cannot be empty")
+        # Normalize to lowercase
+        object.__setattr__(self, "name", self.name.lower().strip())
