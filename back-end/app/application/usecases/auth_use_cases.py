@@ -13,7 +13,7 @@ from app.application.exceptions import (
     InvalidCredentialsException,
     UserNotFoundException,
 )
-from app.domain.entities.user import User, UserRole, UserId
+from app.domain.entities.user import User, UserRole
 from app.domain.exceptions.user_exceptions import UserCreationException
 
 

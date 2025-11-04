@@ -22,6 +22,9 @@ class UserId:
 
     value: int = field(default=0)
 
+    def is_zero(self) -> bool:
+        return self.value == 0
+
     def __post_init__(self):
         if not isinstance(self.value, int) or self.value < 0:
             raise ValueError("User ID must be a non-negative integer")

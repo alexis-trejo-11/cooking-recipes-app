@@ -1,5 +1,8 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from config.sql_session import init_db, close_db
 import uvicorn
+from app.presentation.controller.auth_controller import router as auth_router
 
 app = FastAPI(
     title="Cooking Recipes API",
@@ -8,9 +11,19 @@ app = FastAPI(
 )
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    yield
+    await close_db()
+
+
 @app.get("/")
 async def home():
     return {"message": "Welcome to the Cooking Recipes API!"}
+
+
+app.include_router(auth_router)
 
 
 if __name__ == "__main__":
