@@ -1,6 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from typing import AsyncGenerator
 from .config import settings
+from sqlalchemy.orm import DeclarativeBase
+
+
+class Base(DeclarativeBase):
+    """Base class for all models"""
+
+    pass
+
 
 # Create async engine
 engine = create_async_engine(

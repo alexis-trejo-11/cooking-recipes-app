@@ -1,12 +1,12 @@
-from app.infrastructure.persistence.repository.sqlalchemy_user_repository import (
+from app.auth.infrastucture.persitence.sqlalchemy_user_repository import (
     SQLAlchemyUserRepository,
 )
 import pytest
 import pytest_asyncio
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from app.domain.entities.user import User, UserRole, UserId
-from app.infrastructure.persistence.models.models import Base
+from app.auth.domain.user import User, UserRole, UserId
+from config.sql_session import Base
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -43,7 +43,6 @@ def sample_user():
 
 
 class TestSQLAlchemyUserRepository:
-
     @pytest.mark.asyncio
     async def test_save_and_get_user(self, db_session, sample_user):
         """Test saving and retrieving user"""

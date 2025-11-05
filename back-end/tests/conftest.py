@@ -11,8 +11,8 @@ import os
 # Add the parent directory to Python path BEFORE importing app modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from app.domain.entities.user import User, UserRole, UserId
-from app.domain.exceptions.user_exceptions import (
+from app.auth.domain.user import User, UserRole, UserId
+from app.auth.domain.exceptions import (
     UserValidationException,
     UserCreationException,
     UserReconstructionException,

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from config.sql_session import init_db, close_db
 import uvicorn
-from app.presentation.controller.auth_controller import router as auth_router
+from app.auth.presentation.auth_controller import router as auth_router
 
 app = FastAPI(
     title="Cooking Recipes API",

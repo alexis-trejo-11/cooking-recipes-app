@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, Mock
 from fastapi import HTTPException
-from app.presentation.controller import auth_controller
-from app.application.usecases.auth_use_cases import SignUpUseCase, LoginUseCase
-from app.application.dto.auth_dtos import SignUpRequest, LoginRequest, AuthResponse
-from app.application.exceptions import (
+from app.auth.presentation import auth_controller
+from app.auth.application.auth_use_cases import SignUpUseCase, LoginUseCase
+from app.auth.application.dtos import SignUpRequest, LoginRequest, AuthResponse
+from app.auth.application.exceptions import (
     UserAlreadyExistsException,
     InvalidCredentialsException,
 )
@@ -185,7 +185,7 @@ class TestAuthControllerIntegration:
         """Create TestClient with mocked dependencies"""
         from fastapi.testclient import TestClient
         import main
-        from app.presentation.dependencies.auth import (
+        from app.auth.presentation.depencies import (
             get_signup_use_case,
             get_login_use_case,
         )
