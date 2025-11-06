@@ -41,3 +41,6 @@ class MockUserRepository(UserRepository):
 
     async def exists_by_email(self, email: str) -> bool:
         return email.lower() in self._email_index
+
+    async def exists_by_id(self, user_id: UserId) -> bool:
+        return user_id in self._users

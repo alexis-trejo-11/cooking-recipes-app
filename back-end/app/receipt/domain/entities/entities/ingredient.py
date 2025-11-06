@@ -1,9 +1,9 @@
 from typing import Optional, List
 from decimal import Decimal
 from dataclasses import dataclass, field
-from .value_objects import IngredientId, Quantity
-from .enums import DietType
-from ..exceptions import RecipeValidationException
+from ..value_objects.value_objects_standard import IngredientId, Quantity
+from ..value_objects.enums import DietType
+from ...exceptions import RecipeValidationException
 
 
 @dataclass(frozen=True)

@@ -56,3 +56,21 @@ class RecipeValidationException(RecipeDomainException):
     """Recipe validation errors"""
 
     pass
+
+
+class RecipeAlreadyExistsException(ApplicationException):
+    """Recipe already exists errors"""
+
+    pass
+
+
+class UnauthorizedException(ApplicationException):
+    """Unauthorized access errors"""
+
+    pass
+
+
+class InvalidRecipeDataException(ApplicationException):
+    """Invalid recipe data errors"""
+
+    pass

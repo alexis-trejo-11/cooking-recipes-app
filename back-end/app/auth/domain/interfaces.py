@@ -36,6 +36,11 @@ class UserRepository(ABC):
         """Check if user exists by email"""
         pass
 
+    @abstractmethod
+    async def exists_by_id(self, user_id: UserId) -> bool:
+        """Check if user exists by user_id"""
+        pass
+
 
 class PasswordHasher(ABC):
     """Abstract base class for password hashing"""

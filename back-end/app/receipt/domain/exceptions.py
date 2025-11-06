@@ -99,3 +99,46 @@ class RecipeStateException(RecipeDomainException):
 
     def __init__(self, message: str, error_code: str = "INVALID_STATE"):
         super().__init__(message, error_code)
+
+
+class UnauthorizedAccessException(RecipeDomainException):
+    """Raised when user tries to access/modify resource they don't own"""
+
+    def __init__(
+        self, user_id: str, resource_id: str, error_code: str = "UNAUTHORIZED_ACCESS"
+    ):
+        super().__init__(
+            f"User {user_id} is not authorized to access resource {resource_id}",
+            error_code,
+        )
+
+
+class RecipeAlreadyRatedException(RecipeDomainException):
+    """Raised when user tries to rate a recipe they already rated"""
+
+    def __init__(self, user_id: str, recipe_id: str, error_code: str = "ALREADY_RATED"):
+        super().__init__(
+            f"User {user_id} has already rated recipe {recipe_id}", error_code
+        )
+
+
+class FavoriteAlreadyExistsException(RecipeDomainException):
+    """Raised when trying to add duplicate favorite"""
+
+    def __init__(
+        self, user_id: str, recipe_id: str, error_code: str = "FAVORITE_EXISTS"
+    ):
+        super().__init__(
+            f"Recipe {recipe_id} is already in user {user_id}'s favorites", error_code
+        )
+
+
+class FavoriteNotFoundException(RecipeDomainException):
+    """Raised when favorite not found"""
+
+    def __init__(
+        self, user_id: str, recipe_id: str, error_code: str = "FAVORITE_NOT_FOUND"
+    ):
+        super().__init__(
+            f"Recipe {recipe_id} not found in user {user_id}'s favorites", error_code
+        )

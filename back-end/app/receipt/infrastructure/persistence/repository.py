@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy import func, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.receipt.domain.interfaces.interfaces import RecipeRepository
+from ....utils.core.pagination import Page, PageRequest
+from ....utils.core.specification import Specification
+from app.receipt.domain.interfaces import RecipeRepository
 from app.receipt.domain.entities.recipe import Recipe
 from app.auth.domain.user import UserId
 from app.receipt.domain.entities.value_objects import RecipeId
@@ -31,9 +33,9 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
         self.session = session
         self.mapper = RecipeMapper()
 
-    async def get_by_id(self, recipe_id: RecipeId) -> Optional[Recipe]:
+    async def find_by_id(self, recipe_id: RecipeId) -> Optional[Recipe]:
         """Get recipe by ID with all related data"""
-        logger.info(f"Fetching recipe by ID: {recipe_id.value}")
+        logger.debug(f"Fetching recipe by ID: {recipe_id.value}")
 
         stmt = (
             select(RecipeModel)
@@ -47,33 +49,51 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
             logger.info(f"Recipe not found: {recipe_id.value}")
             return None
 
-        logger.info(f"Recipe found: {recipe_id.value}")
+        logger.debug(f"Recipe found: {recipe_id.value}")
         return await self.mapper.model_to_entity(recipe_model, self.session)
 
-    async def get_by_author(
-        self, author_id: UserId, skip: int = 0, limit: int = 100
-    ) -> List[Recipe]:
-        """Get recipes by author ID"""
-        logger.info(
-            f"Fetching recipes by author: {author_id.value}, skip: {skip}, limit: {limit}"
+    async def find_by_id_and_author(
+        self, recipe_id: RecipeId, author_id: UserId
+    ) -> Optional[Recipe]:
+        logger.debug(
+            f"Fetching recipe by ID: {recipe_id.value} and author ID: {author_id.value}"
         )
 
         stmt = (
             select(RecipeModel)
+            .where(RecipeModel.id == recipe_id.value)
             .where(RecipeModel.author_id == author_id.value)
             .where(RecipeModel.deleted_at.is_(None))
-            .offset(skip)
-            .limit(limit)
-            .order_by(RecipeModel.created_at.desc())
         )
         result = await self.session.execute(stmt)
-        recipe_models = result.scalars().all()
+        recipe_model = result.scalar_one_or_none()
 
-        logger.info(f"Found {len(recipe_models)} recipes for author {author_id.value}")
-        return [
-            await self.mapper.model_to_entity(model, self.session)
-            for model in recipe_models
-        ]
+        if not recipe_model:
+            logger.info(f"Recipe not found: {recipe_id.value}")
+            return None
+
+        logger.debug(f"Recipe found: {recipe_id.value}")
+        return await self.mapper.model_to_entity(recipe_model, self.session)
+
+    async def search(
+        self, spec: Specification, page_request: PageRequest
+    ) -> Page[Recipe]:
+        """
+        Search recipes using specification with pagination.
+
+        Args:
+            spec: Specification to filter recipes
+            page: Page number (1-indexed)
+            size: Page size
+
+        Returns:
+            Page[Recipe]: Paginated results
+        """
+        pass
+
+    async def _count_by_spec(self, spec: Specification) -> int:
+        """Count recipes that satisfy the specification."""
+        pass
 
     async def save(self, recipe: Recipe) -> Recipe:
         """Save recipe (create or update)"""
@@ -92,7 +112,6 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
 
             self.session.add(recipe_model)
             await self.session.flush()
-            logger.debug(f"Recipe model created with ID: {recipe_model.id}")
 
             # Save related entities
             await self._save_related_entities(recipe_model.id, recipe)
@@ -185,51 +204,6 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
             logger.warning(f"Recipe not found for deletion: {recipe_id.value}")
 
         return deleted
-
-    async def list_all(self, skip: int = 0, limit: int = 100) -> List[Recipe]:
-        """List all non-deleted recipes with pagination"""
-        logger.info(f"Listing all recipes, skip: {skip}, limit: {limit}")
-
-        stmt = (
-            select(RecipeModel)
-            .where(RecipeModel.deleted_at.is_(None))
-            .offset(skip)
-            .limit(limit)
-            .order_by(RecipeModel.created_at.desc())
-        )
-        result = await self.session.execute(stmt)
-        recipe_models = result.scalars().all()
-
-        logger.info(f"Found {len(recipe_models)} recipes")
-        return [
-            await self.mapper.model_to_entity(model, self.session)
-            for model in recipe_models
-        ]
-
-    async def search_by_name(
-        self, name: str, skip: int = 0, limit: int = 100
-    ) -> List[Recipe]:
-        """Search recipes by name"""
-        logger.info(
-            f"Searching recipes by name: '{name}', skip: {skip}, limit: {limit}"
-        )
-
-        stmt = (
-            select(RecipeModel)
-            .where(RecipeModel.name.ilike(f"%{name}%"))
-            .where(RecipeModel.deleted_at.is_(None))
-            .offset(skip)
-            .limit(limit)
-            .order_by(RecipeModel.created_at.desc())
-        )
-        result = await self.session.execute(stmt)
-        recipe_models = result.scalars().all()
-
-        logger.info(f"Found {len(recipe_models)} recipes matching '{name}'")
-        return [
-            await self.mapper.model_to_entity(model, self.session)
-            for model in recipe_models
-        ]
 
     async def exists_by_name_and_author(self, name: str, author_id: UserId) -> bool:
         """Check if recipe with same name exists for author"""

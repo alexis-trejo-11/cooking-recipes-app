@@ -111,6 +111,11 @@ class SQLAlchemyUserRepository(UserRepository):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none() is not None
 
+    async def exists_by_id(self, user_id: UserId) -> bool:
+        stmt = select(UserModel.id).where(UserModel.id == user_id.value)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none() is not None
+
     def _to_entity(self, user_model: UserModel) -> User:
         """Convert SQLAlchemy model to domain entity"""
         # Parse roles from JSON string

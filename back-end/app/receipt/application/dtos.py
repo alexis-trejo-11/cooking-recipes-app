@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Set, Dict, Any
 from decimal import Decimal
-from datetime import datetime
+from app.utils.page_request import PydnaticPageRequest
 from enum import Enum
 
 
@@ -155,7 +155,7 @@ class AddRatingRequest(BaseModel):
 
 
 class RecipeSearchRequest(BaseModel):
-    query: Optional[str] = Field(None, description="Search query")
+    query: str = Field(..., description="Search query")
     author_id: Optional[int] = Field(None, gt=0, description="Filter by author")
     difficulty: Optional[DifficultyLevel] = Field(
         None, description="Filter by difficulty"
@@ -172,8 +172,24 @@ class RecipeSearchRequest(BaseModel):
     exclude_allergens: List[str] = Field(
         default_factory=list, description="Exclude allergens"
     )
-    page: int = Field(default=1, ge=1, description="Page number")
-    page_size: int = Field(default=20, ge=1, le=100, description="Page size")
+    pagination: PydnaticPageRequest = Field(..., description="Pagination parameters")
+
+    def is_empty(self) -> bool:
+        return not any(
+            [
+                self.query,
+                self.author_id,
+                self.difficulty,
+                self.cuisine,
+                self.meal_type,
+                self.diet,
+                self.max_prep_time is not None,
+                self.max_cook_time is not None,
+                self.min_rating is not None,
+                self.tags,
+                self.exclude_allergens,
+            ]
+        )
 
 
 class FindByIngredientsRequest(BaseModel):
@@ -255,6 +271,46 @@ class RecipeSummaryResponse(BaseModel):
     class Config:
         from_attributes = True
 
+    @classmethod
+    def from_recipe(cls, recipe: Any) -> "RecipeSummaryResponse":
+        return cls(
+            id=recipe.id.value,
+            name=recipe.name,
+            author_id=recipe.author_id.value,
+            author_name=None,
+            description=recipe.description,
+            difficulty=recipe.difficulty,
+            cuisine=recipe.cuisine,
+            image_url=recipe.image_url,
+            prep_time_minutes=(
+                recipe.get_cooking_time().prep_minutes
+                if recipe.get_cooking_time()
+                else None
+            ),
+            cook_time_minutes=(
+                recipe.get_cooking_time().cook_minutes
+                if recipe.get_cooking_time()
+                else None
+            ),
+            total_time_minutes=recipe.calculate_total_time(),
+            servings=(
+                recipe.get_serving_info().servings
+                if recipe.get_serving_info()
+                else None
+            ),
+            average_rating=recipe.get_average_rating(),
+            rating_count=recipe._rating_count,
+            view_count=recipe.get_view_count(),
+            favorite_count=recipe.get_favorite_count(),
+            tags=[
+                TagResponse(name=tag.name, description=tag.description)
+                for tag in recipe.get_tags()
+            ],
+            meal_types=list(recipe.get_meal_types()),
+            created_at=recipe.get_created_at(),
+            updated_at=recipe.get_updated_at(),
+        )
+
 
 class RecipeResponse(BaseModel):
     id: int
@@ -282,18 +338,97 @@ class RecipeResponse(BaseModel):
     updated_at: datetime
     deleted_at: Optional[datetime]
 
+    @classmethod
+    def from_recipe(cls, recipe) -> "RecipeResponse":
+        ingredients_response = []
+        for ingredient in recipe.get_ingredients():
+            ingredients_response.append(
+                IngredientResponse(
+                    id=ingredient.id.value,
+                    name=ingredient.name,
+                    quantity=QuantityResponse(
+                        value=ingredient.quantity.value, unit=ingredient.quantity.unit
+                    ),
+                    properties=IngredientPropertiesResponse(
+                        is_vegan=ingredient.properties.is_vegan,
+                        is_vegetarian=ingredient.properties.is_vegetarian,
+                        is_gluten_free=ingredient.properties.is_gluten_free,
+                        is_dairy_free=ingredient.properties.is_dairy_free,
+                        allergens=ingredient.properties.allergens,
+                    ),
+                    is_optional=ingredient.is_optional,
+                    substitutes=ingredient.substitutes,
+                )
+            )
+
+        steps_response = []
+        for step in recipe.get_steps():
+            steps_response.append(
+                StepResponse(
+                    number=step.number,
+                    description=step.description,
+                    duration_minutes=step.duration_minutes,
+                    technique=step.technique,
+                    temperature=step.temperature,
+                )
+            )
+
+        tags_response = []
+        for tag in recipe.get_tags():
+            tags_response.append(
+                TagResponse(name=tag.name, description=tag.description)
+            )
+
+        nutritional_info = None
+        if recipe.get_nutritional_info():
+            nutritional_info = NutritionalInfoResponse(
+                calories=recipe.get_nutritional_info().calories,
+                protein_g=recipe.get_nutritional_info().protein_g,
+                carbs_g=recipe.get_nutritional_info().carbs_g,
+                fat_g=recipe.get_nutritional_info().fat_g,
+            )
+
+        return RecipeResponse(
+            id=recipe.id.value,
+            name=recipe.name,
+            author_id=recipe.author_id.value,
+            author_name=None,  # Would need user service to get author name
+            description=recipe.description,
+            difficulty=recipe.difficulty,
+            cuisine=recipe.cuisine,
+            ingredients=ingredients_response,
+            steps=steps_response,
+            tags=tags_response,
+            meal_types=list(recipe.get_meal_types()),
+            servings=(
+                recipe.get_serving_info().servings
+                if recipe.get_serving_info()
+                else None
+            ),
+            prep_time_minutes=(
+                recipe.get_cooking_time().prep_minutes
+                if recipe.get_cooking_time()
+                else None
+            ),
+            cook_time_minutes=(
+                recipe.get_cooking_time().cook_minutes
+                if recipe.get_cooking_time()
+                else None
+            ),
+            total_time_minutes=recipe.calculate_total_time(),
+            nutritional_info=nutritional_info,
+            average_rating=recipe.get_average_rating(),
+            rating_count=recipe._rating_count,
+            view_count=recipe.get_view_count(),
+            favorite_count=recipe.get_favorite_count(),
+            version=recipe.version,
+            created_at=recipe.get_created_at(),
+            updated_at=recipe.get_updated_at(),
+            deleted_at=recipe.deleted_at,
+        )
+
     class Config:
         from_attributes = True
-
-
-class PaginatedRecipesResponse(BaseModel):
-    recipes: List[RecipeSummaryResponse]
-    total_count: int
-    page: int
-    page_size: int
-    total_pages: int
-    has_next: bool
-    has_prev: bool
 
 
 class RecipeCreatedResponse(BaseModel):
