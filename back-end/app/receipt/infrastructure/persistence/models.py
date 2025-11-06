@@ -1,7 +1,7 @@
+# app/recipe/infrastructure/persistence/models.py
 from typing import List, Optional, TYPE_CHECKING
 from datetime import datetime
 from decimal import Decimal
-
 from sqlalchemy import (
     ForeignKey,
     String,
@@ -12,28 +12,27 @@ from sqlalchemy import (
     Column,
     Integer,
     DateTime,
-    Boolean,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from config.sql_session import Base
 
 if TYPE_CHECKING:
     from app.auth.infrastucture.persitence.models import UserModel
 
-userRoles = Table(
-    "user_roles",
-    Base.metadata,
-    Column("user_id", Integer, primary_key=True),
-    Column("role", String, primary_key=True),
-)
-
-
+# Association tables
 recipe_tags = Table(
     "recipe_tags",
     Base.metadata,
     Column("recipe_id", ForeignKey("recipes.id"), primary_key=True),
     Column("tag_id", ForeignKey("tags.id"), primary_key=True),
+)
+
+recipe_meal_types = Table(
+    "recipe_meal_types",
+    Base.metadata,
+    Column("recipe_id", ForeignKey("recipes.id"), primary_key=True),
+    Column("meal_type", String(50), primary_key=True),  # Using MealType enum values
 )
 
 
@@ -44,27 +43,36 @@ class RecipeModel(Base):
 
     # Basic info
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(255))
-    author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    difficulty: Mapped[Optional[str]] = mapped_column(
-        String(50), default="medium", nullable=True
-    )
-    cuisine: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
-    # Metadata
-    serving_size: Mapped[Optional[int]] = mapped_column(
-        nullable=True
+    # Enums stored as strings
+    difficulty: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True
+    )  # easy, medium, hard
+    cuisine: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
+    # Serving information
+    serving_size: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True
+    )  # "1 cup", "2 slices"
+    servings: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True
     )  # number of servings
+
+    # Cooking time (separate from step durations)
     prep_time_minutes: Mapped[Optional[int]] = mapped_column(nullable=True)
     cook_time_minutes: Mapped[Optional[int]] = mapped_column(nullable=True)
-    total_time_minutes: Mapped[Optional[int]] = mapped_column(nullable=True)
+    rest_time_minutes: Mapped[Optional[int]] = mapped_column(nullable=True, default=0)
 
-    # Nutritional info
-    calories: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(10, 2), nullable=True)
-    protein_g: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(10, 2), nullable=True)
-    carbs_g: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(10, 2), nullable=True)
-    fat_g: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(10, 2), nullable=True)
+    # Nutritional info (per recipe total)
+    calories: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    protein_g: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(8, 2), nullable=True)
+    carbs_g: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(8, 2), nullable=True)
+    fat_g: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(8, 2), nullable=True)
+    fiber_g: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(8, 2), nullable=True)
+    sodium_mg: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(8, 2), nullable=True)
 
     # Tracking
     rating_sum: Mapped[int] = mapped_column(default=0)
@@ -74,16 +82,22 @@ class RecipeModel(Base):
     version: Mapped[int] = mapped_column(default=1)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), onupdate=func.now()
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
     )
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Relationships
     author: Mapped["UserModel"] = relationship(back_populates="recipes")
     ingredients: Mapped[List["IngredientModel"]] = relationship(
-        back_populates="recipe", cascade="all, delete-orphan"
+        back_populates="recipe",
+        cascade="all, delete-orphan",
+        order_by="IngredientModel.id",
     )
     steps: Mapped[List["StepModel"]] = relationship(
         back_populates="recipe",
@@ -91,12 +105,14 @@ class RecipeModel(Base):
         order_by="StepModel.step_number",
     )
     tags: Mapped[List["TagModel"]] = relationship(
-        secondary=recipe_tags, back_populates="recipes"
+        secondary=recipe_tags, back_populates="recipes", order_by="TagModel.name"
     )
-    meal_types: Mapped[List["RecipeMealType"]] = relationship(back_populates="recipe")
+    meal_types: Mapped[List["RecipeMealTypeModel"]] = relationship(
+        back_populates="recipe", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
-        return f"<Recipe(id={self.id}, name='{self.name}', author_id={self.author_id})>"
+        return f"<RecipeModel(id={self.id}, name='{self.name}', author_id={self.author_id})>"
 
 
 class IngredientModel(Base):
@@ -105,12 +121,15 @@ class IngredientModel(Base):
     __tablename__ = "ingredients"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.id"), index=True)
-    name: Mapped[str] = mapped_column(String(100))
-    quantity_value: Mapped[Optional[Decimal]] = mapped_column(
-        DECIMAL(10, 3), nullable=True
+    recipe_id: Mapped[int] = mapped_column(
+        ForeignKey("recipes.id"), nullable=False, index=True
     )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    # Quantity as separate fields for easier querying
+    quantity_value: Mapped[Decimal] = mapped_column(DECIMAL(10, 3), nullable=False)
     quantity_unit: Mapped[str] = mapped_column(String(50), nullable=False)
+
     is_optional: Mapped[bool] = mapped_column(default=False)
 
     # Dietary properties
@@ -118,18 +137,18 @@ class IngredientModel(Base):
     is_vegetarian: Mapped[bool] = mapped_column(default=True)
     is_gluten_free: Mapped[bool] = mapped_column(default=True)
     is_dairy_free: Mapped[bool] = mapped_column(default=True)
-    allergens: Mapped[Optional[str]] = mapped_column(
-        JSON, default=list
-    )  # Store as JSON list
 
-    # Substitutes (JSON serialized list)
-    substitutes: Mapped[Optional[str]] = mapped_column(JSON, default=list)
+    # Allergens as JSON array
+    allergens: Mapped[Optional[List[str]]] = mapped_column(JSON, default=list)
+
+    # Substitutes as JSON array
+    substitutes: Mapped[Optional[List[str]]] = mapped_column(JSON, default=list)
 
     # Relationships
     recipe: Mapped["RecipeModel"] = relationship(back_populates="ingredients")
 
     def __repr__(self) -> str:
-        return f"<Ingredient(id={self.id}, name='{self.name}', recipe_id={self.recipe_id})>"
+        return f"<IngredientModel(id={self.id}, name='{self.name}', recipe_id={self.recipe_id})>"
 
 
 class StepModel(Base):
@@ -138,20 +157,23 @@ class StepModel(Base):
     __tablename__ = "recipe_steps"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.id"), index=True)
-    step_number: Mapped[int]
-    description: Mapped[str] = mapped_column(Text)
+    recipe_id: Mapped[int] = mapped_column(
+        ForeignKey("recipes.id"), nullable=False, index=True
+    )
+    step_number: Mapped[int] = mapped_column(nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
     duration_minutes: Mapped[Optional[int]] = mapped_column(nullable=True)
     technique: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    temperature: Mapped[Optional[str]] = mapped_column(
-        String(50), nullable=True
-    )  # e.g., "180°C", "medium heat"
+    temperature: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
+    # Ingredients used in this step (JSON array of ingredient names)
+    ingredients_used: Mapped[Optional[List[str]]] = mapped_column(JSON, default=list)
 
     # Relationships
     recipe: Mapped["RecipeModel"] = relationship(back_populates="steps")
 
     def __repr__(self) -> str:
-        return f"<Step(id={self.id}, recipe_id={self.recipe_id}, step_number={self.step_number})>"
+        return f"<StepModel(id={self.id}, recipe_id={self.recipe_id}, step_number={self.step_number})>"
 
 
 class TagModel(Base):
@@ -160,7 +182,9 @@ class TagModel(Base):
     __tablename__ = "tags"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    name: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True, nullable=False
+    )
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships
@@ -169,21 +193,24 @@ class TagModel(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Tag(id={self.id}, name='{self.name}')>"
+        return f"<TagModel(id={self.id}, name='{self.name}')>"
 
 
-class RecipeMealType(Base):
+class RecipeMealTypeModel(Base):
     """SQLAlchemy model for Recipe Meal Type association"""
 
     __tablename__ = "recipe_meal_types"
 
-    recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.id"), primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    recipe_id: Mapped[int] = mapped_column(
+        ForeignKey("recipes.id"), nullable=False, index=True
+    )
     meal_type: Mapped[str] = mapped_column(
-        String(50), primary_key=True
-    )  # breakfast, lunch, dinner, etc.
+        String(20), nullable=False
+    )  # breakfast, lunch, dinner, snack, dessert
 
     # Relationships
     recipe: Mapped["RecipeModel"] = relationship(back_populates="meal_types")
 
     def __repr__(self) -> str:
-        return f"<RecipeMealType(recipe_id={self.recipe_id}, meal_type='{self.meal_type}')>"
+        return f"<RecipeMealTypeModel(recipe_id={self.recipe_id}, meal_type='{self.meal_type}')>"

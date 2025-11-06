@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Set, Dict, Any
 from decimal import Decimal
-from app.utils.page_request import PydnaticPageRequest
+from app.utils.external.page_request import PydnaticPageRequest
 from enum import Enum
 
 

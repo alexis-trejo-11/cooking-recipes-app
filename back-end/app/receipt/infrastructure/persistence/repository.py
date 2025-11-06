@@ -1,25 +1,28 @@
 from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy import func, select, update, delete
+from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from ....utils.core.pagination import Page, PageRequest
-from ....utils.core.specification import Specification
+from ....utils.core.specification import SQLCriteria, SQLSpecification as Specification
 from app.receipt.domain.interfaces import RecipeRepository
-from app.receipt.domain.entities.recipe import Recipe
+from app.receipt.domain.models.entities.recipe import (
+    Recipe,
+    Ingredient,
+    MealType,
+    Step,
+    Tag,
+    RecipeId,
+)
 from app.auth.domain.user import UserId
-from app.receipt.domain.entities.value_objects import RecipeId
-from app.receipt.domain.entities.ingredient import Ingredient
-from app.receipt.domain.entities.enums import MealType
 from app.receipt.infrastructure.persistence.models import (
     RecipeModel,
     IngredientModel,
     StepModel,
     TagModel,
-    RecipeMealType,
     recipe_tags,
 )
 from app.receipt.application.exceptions import RecipeNotFoundException
-from app.receipt.domain.entities.value_objects import Step, Tag
 import logging
 from .mapper import RecipeMapper
 
@@ -83,17 +86,102 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
 
         Args:
             spec: Specification to filter recipes
-            page: Page number (1-indexed)
-            size: Page size
+            page_request: Pagination details
 
         Returns:
             Page[Recipe]: Paginated results
         """
-        pass
+        try:
+            query = select(RecipeModel)
 
-    async def _count_by_spec(self, spec: Specification) -> int:
+            joins = spec.get_joins()
+            for join in joins:
+                if join not in [
+                    RecipeModel.ingredients,
+                    RecipeModel.steps,
+                    RecipeModel.tags,
+                    RecipeModel.meal_types,
+                ]:
+                    query = query.join(join)
+
+            query = query.where(spec.to_sql_condition())
+
+            count_query = select(func.count()).select_from(RecipeModel)
+            for join in joins:
+                if join not in [
+                    RecipeModel.ingredients,
+                    RecipeModel.steps,
+                    RecipeModel.tags,
+                    RecipeModel.meal_types,
+                ]:
+                    count_query = count_query.join(join)
+            count_query = count_query.where(spec.to_sql_condition())
+
+            total_result = await self.session.execute(count_query)
+            total = total_result.scalar() or 0
+
+            sort_column = self._get_sort_column(page_request.sort_by or "created_at")
+            if page_request.sort_dir == "desc":
+                sort_column = sort_column.desc()
+            else:
+                sort_column = sort_column.asc()
+
+            query = query.order_by(sort_column)
+
+            offset = (page_request.page - 1) * page_request.size
+            query = query.offset(offset).limit(page_request.size)
+
+            # Eager load related data
+            query = query.options(
+                selectinload(RecipeModel.ingredients),
+                selectinload(RecipeModel.steps),
+                selectinload(RecipeModel.tags),
+                selectinload(RecipeModel.meal_types),
+            )
+
+            result = await self.session.execute(query)
+            recipe_models = result.scalars().all()
+
+            recipes = [
+                await self.mapper.model_to_entity(model, self.session)
+                for model in recipe_models
+            ]
+
+            return Page(
+                items=recipes,
+                total=total,
+                page=page_request.page,
+                size=page_request.size,
+            )
+        except Exception as e:
+            print(f"Error searching recipes with spec: {e}")
+            return Page.empty()
+
+    async def count_by_spec(self, spec: SQLCriteria) -> int:
         """Count recipes that satisfy the specification."""
-        pass
+        try:
+            query = select(func.count()).select_from(RecipeModel)
+
+            # Apply joins from specification
+            joins = spec.get_joins()
+            for join in joins:
+                if join not in [
+                    RecipeModel.ingredients,
+                    RecipeModel.steps,
+                    RecipeModel.tags,
+                    RecipeModel.meal_types,
+                ]:
+                    query = query.join(join)
+
+            # Apply WHERE condition
+            query = query.where(spec.to_sql_condition())
+
+            result = await self.session.execute(query)
+            return result.scalar() or 0
+
+        except Exception as e:
+            print(f"Error counting recipes with spec: {e}")
+            return 0
 
     async def save(self, recipe: Recipe) -> Recipe:
         """Save recipe (create or update)"""
@@ -119,7 +207,7 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
 
             logger.info(f"Successfully created recipe: {recipe_model.id}")
 
-            created_recipe = await self.get_by_id(RecipeId(recipe_model.id))
+            created_recipe = await self.find_by_id(RecipeId(recipe_model.id))
             if created_recipe is None:
                 raise RuntimeError(
                     f"Failed to retrieve newly created recipe with ID: {recipe_model.id}"
@@ -318,3 +406,15 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
         await self.session.execute(
             delete(recipe_tags).where(recipe_tags.c.recipe_id == recipe_id)
         )
+
+    def _get_sort_column(self, sort_by: str):
+        """Get SQLAlchemy column for sorting."""
+        sort_columns = {
+            "created_at": RecipeModel.created_at,
+            "updated_at": RecipeModel.updated_at,
+            "name": RecipeModel.name,
+            "rating": (RecipeModel.rating_sum / RecipeModel.rating_count),
+            "views": RecipeModel.view_count,
+            "favorites": RecipeModel.favorite_count,
+        }
+        return sort_columns.get(sort_by, RecipeModel.created_at)

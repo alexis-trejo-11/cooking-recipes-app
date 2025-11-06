@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-from .entities.recipe import Recipe, RecipeId
-from app.utils.core.specification import Specification
+from .models.entities.recipe import Recipe, RecipeId
+from app.utils.core.specification import SQLSpecification as Specification
 from app.auth.domain.user import UserId
 from app.utils.core.pagination import Page, PageRequest
 
