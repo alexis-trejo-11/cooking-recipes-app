@@ -28,13 +28,6 @@ recipe_tags = Table(
     Column("tag_id", ForeignKey("tags.id"), primary_key=True),
 )
 
-recipe_meal_types = Table(
-    "recipe_meal_types",
-    Base.metadata,
-    Column("recipe_id", ForeignKey("recipes.id"), primary_key=True),
-    Column("meal_type", String(50), primary_key=True),  # Using MealType enum values
-)
-
 
 class RecipeModel(Base):
     """SQLAlchemy model for Recipe entity"""

@@ -2,17 +2,16 @@ import logging
 from typing import Optional, Set, List, TYPE_CHECKING
 from datetime import datetime
 from ...exceptions import *
-
-if TYPE_CHECKING:
-    from ..value_objects.value_objects_standard import *
-    from ..value_objects.value_objects_compound import (
-        RecipeCollections,
-        RecipeTrackingInfo,
-        RecipeMetadata,
-        TimeStamps,
-    )
-    from ..value_objects.enums import DifficultyLevel, CuisineType, MealType, DietType
-    from .ingredient import Ingredient
+from app.auth.domain.user import UserId
+from ..value_objects.value_objects_standard import *
+from ..value_objects.value_objects_compound import (
+    RecipeCollections,
+    RecipeTrackingInfo,
+    RecipeMetadata,
+    TimeStamps,
+)
+from ..value_objects.enums import DifficultyLevel, CuisineType, MealType, DietType
+from .ingredient import Ingredient
 
 
 logger = logging.getLogger(__name__)
@@ -44,8 +43,8 @@ class Recipe:
         cls,
         name: str,
         author_id: UserId,
+        difficulty: DifficultyLevel,
         description: Optional[str] = None,
-        difficulty: DifficultyLevel = DifficultyLevel.MEDIUM,
         cuisine: Optional[CuisineType] = None,
     ) -> "Recipe":
         """
@@ -201,6 +200,10 @@ class Recipe:
         return self._tracking_info.calculate_average_rating()
 
     @property
+    def rating_sum(self) -> int:
+        return self._tracking_info._rating_sum
+
+    @property
     def rating_count(self) -> int:
         return self._tracking_info.rating_count
 
@@ -232,7 +235,6 @@ class Recipe:
     def is_deleted(self) -> bool:
         return self._timestamps.is_deleted()
 
-    # === Métodos de negocio ===
     def _check_not_deleted(self) -> None:
         """Verificar que la receta no esté eliminada."""
         if self.is_deleted:
@@ -311,7 +313,6 @@ class Recipe:
             self._record_update()
             logger.debug(f"Recipe {self.id} cuisine updated to {self.cuisine}")
 
-    # === Métodos de colecciones ===
     def add_ingredient(self, ingredient: Ingredient) -> None:
         """Agregar ingrediente a la receta."""
         self._check_not_deleted()
@@ -361,7 +362,6 @@ class Recipe:
         self._record_update()
         logger.debug(f"Meal type '{meal_type}' added to recipe {self.id}")
 
-    # === Métodos de metadata ===
     def set_serving_info(self, serving_info: ServingInfo) -> None:
         """Establecer información de porciones."""
         self._check_not_deleted()
@@ -383,13 +383,12 @@ class Recipe:
         self._record_update()
         logger.debug(f"Nutritional info updated for recipe {self.id}")
 
-    # === Métodos de cálculo ===
     def calculate_total_time(self) -> int:
         """Calcular tiempo total incluyendo preparación y cocción."""
         self._check_not_deleted()
 
         if self.cooking_time:
-            return self.cooking_time.total_minutes
+            return self.cooking_time.calculate_total_minutes()
 
         # Fallback a suma de duraciones de pasos
         total = sum(
@@ -433,7 +432,6 @@ class Recipe:
         logger.debug(f"Allergens detected in recipe {self.id}: {allergens}")
         return allergens
 
-    # === Métodos de tracking ===
     def add_rating(self, rating: int) -> None:
         """Agregar rating a la receta (escala 1-5)."""
         self._check_not_deleted()
@@ -454,7 +452,6 @@ class Recipe:
         self._record_update()
         logger.debug(f"Favorite count incremented for recipe {self.id}")
 
-    # === Métodos especiales ===
     def __repr__(self) -> str:
         return f"Recipe(id={self.id}, name='{self.name}', author={self.author_id}, version={self.version})"
 

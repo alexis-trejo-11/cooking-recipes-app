@@ -1,18 +1,27 @@
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.receipt.domain.entities.recipe import Recipe, RecipeId, IngredientId
+from app.receipt.domain.models.entities.recipe import (
+    Recipe,
+    RecipeId,
+    IngredientId,
+    DifficultyLevel,
+    CuisineType,
+    MealType,
+)
 from app.auth.domain.user import UserId
-from app.receipt.domain.entities.ingredient import Ingredient, IngredientProperties
-from app.receipt.domain.entities.recipe import DifficultyLevel, CuisineType, MealType
+from app.receipt.domain.models.entities.ingredient import (
+    Ingredient,
+    IngredientProperties,
+)
 from app.receipt.infrastructure.persistence.models import (
     RecipeModel,
     IngredientModel,
     StepModel,
     TagModel,
-    RecipeMealType,
+    RecipeMealTypeModel,
     recipe_tags,
 )
-from app.receipt.domain.entities.recipe import (
+from app.receipt.domain.models.value_objects.value_objects_standard import (
     Step,
     Tag,
     ServingInfo,
@@ -39,37 +48,35 @@ class RecipeMapper:
             "description": recipe.description,
             "difficulty": recipe.difficulty.value if recipe.difficulty else None,
             "cuisine": recipe.cuisine.value if recipe.cuisine else None,
+            "servings": (recipe.serving_info.servings if recipe.serving_info else None),
             "serving_size": (
-                recipe._serving_info.servings if recipe._serving_info else None
+                recipe.serving_info.serving_size if recipe.serving_info else None
             ),
             "prep_time_minutes": (
-                recipe._cooking_time.prep_minutes if recipe._cooking_time else None
+                recipe.cooking_time.prep_minutes if recipe.cooking_time else None
             ),
             "cook_time_minutes": (
-                recipe._cooking_time.cook_minutes if recipe._cooking_time else None
-            ),
-            "total_time_minutes": (
-                recipe._cooking_time.total_minutes if recipe._cooking_time else None
+                recipe.cooking_time.cook_minutes if recipe.cooking_time else None
             ),
             "calories": (
-                recipe._nutritional_info.calories if recipe._nutritional_info else None
+                recipe.nutritional_info.calories if recipe.nutritional_info else None
             ),
             "protein_g": (
-                recipe._nutritional_info.protein_g if recipe._nutritional_info else None
+                recipe.nutritional_info.protein_g if recipe.nutritional_info else None
             ),
             "carbs_g": (
-                recipe._nutritional_info.carbs_g if recipe._nutritional_info else None
+                recipe.nutritional_info.carbs_g if recipe.nutritional_info else None
             ),
             "fat_g": (
-                recipe._nutritional_info.fat_g if recipe._nutritional_info else None
+                recipe.nutritional_info.fat_g if recipe.nutritional_info else None
             ),
-            "rating_sum": recipe._rating_sum,
-            "rating_count": recipe._rating_count,
-            "view_count": recipe._view_count,
-            "favorite_count": recipe._favorite_count,
+            "rating_sum": recipe.rating_sum,
+            "rating_count": recipe.rating_count,
+            "view_count": recipe.view_count,
+            "favorite_count": recipe.favorite_count,
             "version": recipe.version,
-            "created_at": recipe.get_created_at(),
-            "updated_at": recipe.get_updated_at(),
+            "created_at": recipe.created_at,
+            "updated_at": recipe.updated_at,
             "deleted_at": recipe.deleted_at,
         }
 
@@ -186,15 +193,18 @@ class RecipeMapper:
         return {Tag(name=tag.name, description=tag.description) for tag in tag_models}
 
     @staticmethod
-    def _map_meal_types(meal_type_models: List[RecipeMealType]) -> set[MealType]:
+    def _map_meal_types(meal_type_models: List[RecipeMealTypeModel]) -> set[MealType]:
         """Map MealType models to domain entities"""
         return {MealType(meal_type.meal_type) for meal_type in meal_type_models}
 
     @staticmethod
     def _map_serving_info(recipe_model: RecipeModel) -> Optional[ServingInfo]:
         """Map serving info from model"""
-        if recipe_model.serving_size:
-            return ServingInfo(servings=recipe_model.serving_size)
+        if recipe_model.serving_size and recipe_model.servings:
+            return ServingInfo(
+                servings=recipe_model.servings,
+                serving_size=recipe_model.serving_size,
+            )
         return None
 
     @staticmethod

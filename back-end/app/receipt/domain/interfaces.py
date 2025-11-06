@@ -21,7 +21,7 @@ class RecipeRepository(ABC):
 
     @abstractmethod
     async def search(
-        self, name: Specification, page_request: PageRequest
+        self, spec: Specification, page_request: PageRequest
     ) -> Page[Recipe]:
         pass
 

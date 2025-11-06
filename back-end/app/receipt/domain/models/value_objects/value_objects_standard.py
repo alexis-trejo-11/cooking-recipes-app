@@ -26,19 +26,6 @@ class RecipeId:
 
 
 @dataclass(frozen=True)
-class UserId:
-    """Value Object para identificador de User."""
-
-    value: int = field(default=0)
-
-    def __str__(self) -> str:
-        return str(self.value)
-
-    def is_valid(self) -> bool:
-        return self.value > 0
-
-
-@dataclass(frozen=True)
 class IngredientId:
     """Value Object para identificador de Ingredient."""
 
@@ -158,14 +145,13 @@ class CookingTime:
         ):
             raise ValueError("Time values cannot be negative")
 
-    @property
-    def total_minutes(self) -> int:
+    def calculate_total_minutes(self) -> int:
         """Calcular tiempo total en minutos."""
         return self.prep_minutes + self.cook_minutes + self.rest_minutes
 
     def format_duration(self) -> str:
         """Formatear duración en formato legible."""
-        total = self.total_minutes
+        total = self.calculate_total_minutes()
         if total < 60:
             return f"{total} minutes"
 
@@ -178,7 +164,7 @@ class CookingTime:
 
     def is_quick_meal(self) -> bool:
         """Determinar si es una comida rápida (< 30 minutos)."""
-        return self.total_minutes <= 30
+        return self.calculate_total_minutes() <= 30
 
 
 @dataclass(frozen=True)

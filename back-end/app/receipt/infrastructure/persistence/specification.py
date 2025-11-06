@@ -1,9 +1,9 @@
 from datetime import datetime
 from sqlalchemy import and_, or_, func, String, Integer, DateTime
 from sqlalchemy.orm import joinedload, aliased
-from typing import Set, List, Optional
+from typing import Any, Set, List, Optional
 from dataclasses import dataclass
-
+from sqlalchemy import true
 from app.utils.core.specification import SQLSpecification
 from app.receipt.infrastructure.persistence.models import (
     RecipeModel,
@@ -12,9 +12,57 @@ from app.receipt.infrastructure.persistence.models import (
     RecipeMealTypeModel,
     IngredientModel,
 )
-from app.receipt.domain.entities.entities.recipe import Recipe, DifficultyLevel
+from app.receipt.domain.models.entities.recipe import Recipe, DifficultyLevel
 from app.auth.domain.user import UserId
-from app.receipt.domain.entities.value_objects.enums import MealType, DietType
+from app.receipt.domain.models.value_objects.enums import MealType, DietType
+
+
+@dataclass
+class AllSpecification(SQLSpecification):
+    """
+    Specification that matches all recipes (no filtering).
+    Useful for listing all active recipes without any criteria.
+    """
+
+    include_deleted: bool = False
+
+    def is_satisfied_by(self, candidate: Any) -> bool:
+        """
+        At domain level, this accepts all candidates.
+
+        Args:
+            candidate: The recipe to check
+
+        Returns:
+            True if recipe should be included
+        """
+        if self.include_deleted:
+            return True
+        # Only filter out deleted recipes
+        return not getattr(candidate, "is_deleted", False)
+
+    def to_sql_condition(self) -> Any:
+        """
+        Convert to SQL condition.
+
+        Returns:
+            SQL condition that matches all non-deleted recipes
+        """
+        if self.include_deleted:
+            # Return a condition that's always true
+            return true()
+
+        # Only filter out deleted recipes
+        return RecipeModel.deleted_at.is_(None)
+
+    def get_joins(self) -> List[Any]:
+        """
+        No joins needed for this specification.
+
+        Returns:
+            Empty list as no joins are required
+        """
+        return []
 
 
 @dataclass

@@ -3,19 +3,17 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Set, TYPE_CHECKING
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+from ..value_objects.value_objects_standard import (
+    CookingTime,
+    NutritionalInfo,
+    ServingInfo,
+    Step,
+    Tag,
+)
+from .enums import MealType
+from ..entities.ingredient import Ingredient, IngredientId
+from ..entities.recipe import RecipeId
 
-
-if TYPE_CHECKING:
-    from .ingredient import Ingredient, IngredientId
-    from .recipe import RecipeId
-    from .value_objects import (
-        CookingTime,
-        NutritionalInfo,
-        ServingInfo,
-        Step,
-        Tag,
-    )
-    from .enums import MealType
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +66,13 @@ class TimeStamps:
         deleted_at: Optional[datetime] = None,
     ) -> "TimeStamps":
         """Reconstruir desde persistencia."""
-        return cls(created_at, updated_at, deleted_at)
+        entity = cls(created_at, updated_at, deleted_at)
+        entity._ensure_timezone(created_at)
+        entity._ensure_timezone(updated_at)
+        if deleted_at:
+            entity._ensure_timezone(deleted_at)
+
+        return entity
 
     def record_update(self) -> "TimeStamps":
         """Registrar una actualización."""
@@ -347,6 +351,10 @@ class RecipeTrackingInfo:
         if self._rating_count == 0:
             return None
         return round(self._rating_sum / self._rating_count, 2)
+
+    @property
+    def rating_sum(self) -> int:
+        return self._rating_sum
 
     @property
     def rating_count(self) -> int:

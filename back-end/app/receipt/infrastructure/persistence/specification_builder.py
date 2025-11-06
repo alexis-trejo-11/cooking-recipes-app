@@ -3,7 +3,7 @@ from datetime import datetime
 from dataclasses import dataclass
 
 from app.auth.domain.user import UserId
-from app.receipt.domain.entities.value_objects.enums import (
+from app.receipt.domain.models.value_objects.enums import (
     DifficultyLevel,
     CuisineType,
     MealType,
