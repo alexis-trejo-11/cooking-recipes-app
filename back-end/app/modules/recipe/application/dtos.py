@@ -1,0 +1,676 @@
+from typing import Optional, List, Set, Any
+from decimal import Decimal
+from datetime import datetime
+from enum import Enum
+
+from pydantic import BaseModel, Field, validator
+
+from app.utils.core.pagination import Page
+from app.utils.external.page_request import (
+    PydanticPaginationParams,
+    PydanticPaginationResponse,
+)
+from app.modules.auth.domain.user import UserId
+
+from app.modules.recipe.domain.models.entities.ingredient import (
+    IngredientProperties,
+    Ingredient,
+)
+from app.modules.recipe.domain.models.entities.recipe import (
+    Recipe,
+    Quantity,
+    Step,
+    Tag,
+    ServingInfo,
+    NutritionalInfo,
+    CookingTime,
+    DifficultyLevel as DomainDifficultyLevel,
+    CuisineType as DomainCuisineType,
+    MealType as DomainMealType,
+)
+from app.modules.recipe.infrastructure.persistence.specification_builder import (
+    RecipeSearchCriteria,
+)
+
+
+class DifficultyLevel(str, Enum):
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
+
+
+class CuisineType(str, Enum):
+    ITALIAN = "italian"
+    MEXICAN = "mexican"
+    ASIAN = "asian"
+    AMERICAN = "american"
+    MEDITERRANEAN = "mediterranean"
+    OTHER = "other"
+
+
+class MealType(str, Enum):
+    BREAKFAST = "breakfast"
+    LUNCH = "lunch"
+    DINNER = "dinner"
+    SNACK = "snack"
+    DESSERT = "dessert"
+
+
+class DietType(str, Enum):
+    VEGAN = "vegan"
+    VEGETARIAN = "vegetarian"
+    GLUTEN_FREE = "gluten_free"
+    DAIRY_FREE = "dairy_free"
+    KETO = "keto"
+    REGULAR = "regular"
+
+
+class QuantityRequest(BaseModel):
+    value: Decimal = Field(..., gt=0, description="Quantity value")
+    unit: str = Field(..., min_length=1, max_length=50, description="Quantity unit")
+
+    def to_domain(self) -> Quantity:
+        return Quantity(value=self.value, unit=self.unit)
+
+
+class IngredientPropertiesRequest(BaseModel):
+    is_vegan: bool = Field(default=True)
+    is_vegetarian: bool = Field(default=True)
+    is_gluten_free: bool = Field(default=True)
+    is_dairy_free: bool = Field(default=True)
+    allergens: Set[str] = Field(default_factory=set)
+
+    def to_domain(self) -> IngredientProperties:
+        return IngredientProperties(
+            is_vegan=self.is_vegan,
+            is_vegetarian=self.is_vegetarian,
+            is_gluten_free=self.is_gluten_free,
+            is_dairy_free=self.is_dairy_free,
+            allergens=set(self.allergens),
+        )
+
+
+class CreateIngredientRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100, description="Ingredient name")
+    quantity: QuantityRequest
+    properties: IngredientPropertiesRequest
+    is_optional: bool = Field(default=False)
+    substitutes: List[str] = Field(default_factory=list)
+
+
+class CreateStepRequest(BaseModel):
+    description: str = Field(..., min_length=1, description="Step description")
+    duration_minutes: Optional[int] = Field(
+        None, ge=0, description="Duration in minutes"
+    )
+    technique: Optional[str] = Field(
+        None, max_length=100, description="Cooking technique"
+    )
+    temperature: Optional[str] = Field(
+        None, max_length=50, description="Cooking temperature"
+    )
+
+
+class TagRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=50, description="Tag name")
+    description: Optional[str] = Field(None, description="Tag description")
+
+
+class CreateRecipeRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200, description="Recipe name")
+    author_id: int = Field(..., gt=0, description="Author user ID")
+    description: Optional[str] = Field(None, description="Recipe description")
+    difficulty: DifficultyLevel = Field(default=DifficultyLevel.MEDIUM)
+    cuisine: Optional[CuisineType] = Field(None, description="Cuisine type")
+    ingredients: List[CreateIngredientRequest] = Field(default_factory=list)
+    steps: List[CreateStepRequest] = Field(default_factory=list)
+    tags: List[TagRequest] = Field(default_factory=list)
+    meal_types: List[MealType] = Field(default_factory=list)
+    servings: Optional[int] = Field(None, gt=0, description="Number of servings")
+    prep_time_minutes: Optional[int] = Field(
+        None, ge=0, description="Prep time in minutes"
+    )
+    cook_time_minutes: Optional[int] = Field(
+        None, ge=0, description="Cook time in minutes"
+    )
+    calories: Optional[int] = Field(None, ge=0, description="Calories per serving")
+    protein_g: Optional[Decimal] = Field(None, ge=0, description="Protein in grams")
+    carbs_g: Optional[Decimal] = Field(None, ge=0, description="Carbs in grams")
+    fat_g: Optional[Decimal] = Field(None, ge=0, description="Fat in grams")
+
+    @validator("name")
+    def name_must_not_be_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Recipe name cannot be empty")
+        return v.strip()
+
+    @validator("description")
+    def description_validation(cls, v):
+        if v is not None and not v.strip():
+            return None
+        return v
+
+    def create_ingredients(self) -> List[Ingredient]:
+        return [
+            Ingredient.create(
+                name=ing_dto.name,
+                quantity=ing_dto.quantity.to_domain(),
+                properties=ing_dto.properties.to_domain(),
+                is_optional=ing_dto.is_optional,
+                substitutes=ing_dto.substitutes,
+            )
+            for ing_dto in self.ingredients
+        ]
+
+    def create_steps(self) -> List[Step]:
+        return [
+            Step(
+                number=len(self.steps) + 1,
+                description=step_dto.description,
+                duration_minutes=step_dto.duration_minutes,
+                technique=step_dto.technique,
+                temperature=step_dto.temperature,
+            )
+            for step_dto in self.steps
+        ]
+
+    def create_tags(self) -> Set[Tag]:
+        return {
+            Tag(name=tag_dto.name, description=tag_dto.description)
+            for tag_dto in self.tags
+        }
+
+    def create_meal_types(self) -> Set[DomainMealType]:
+        return {DomainMealType(meal_type) for meal_type in self.meal_types}
+
+    def create_serving_info(self) -> Optional[ServingInfo]:
+        return ServingInfo(servings=self.servings) if self.servings else None
+
+    def create_cooking_time(self) -> Optional[CookingTime]:
+        cooking_time = None
+        if self.prep_time_minutes is not None or self.cook_time_minutes is not None:
+            cooking_time = CookingTime(
+                prep_minutes=self.prep_time_minutes or 0,
+                cook_minutes=self.cook_time_minutes or 0,
+            )
+
+        return cooking_time
+
+    def create_nutritional_info(self) -> Optional[NutritionalInfo]:
+        if any([self.calories, self.protein_g, self.carbs_g, self.fat_g]):
+            return NutritionalInfo(
+                calories=self.calories or 0,
+                protein_g=self.protein_g or Decimal("0"),
+                carbs_g=self.carbs_g or Decimal("0"),
+                fat_g=self.fat_g or Decimal("0"),
+            )
+        return None
+
+
+class UpdateRecipeRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = Field(None)
+    difficulty: Optional[DifficultyLevel] = Field(None)
+    cuisine: Optional[CuisineType] = Field(None)
+    ingredients: Optional[List[CreateIngredientRequest]] = Field(None)
+    steps: Optional[List[CreateStepRequest]] = Field(None)
+    tags: Optional[List[TagRequest]] = Field(None)
+    meal_types: Optional[List[MealType]] = Field(None)
+    servings: Optional[int] = Field(None, gt=0)
+    prep_time_minutes: Optional[int] = Field(None, ge=0)
+    cook_time_minutes: Optional[int] = Field(None, ge=0)
+    calories: Optional[int] = Field(None, ge=0)
+    protein_g: Optional[Decimal] = Field(None, ge=0)
+    carbs_g: Optional[Decimal] = Field(None, ge=0)
+    fat_g: Optional[Decimal] = Field(None, ge=0)
+
+    @validator("name")
+    def name_validation(cls, v):
+        if v is not None:
+            if not v.strip():
+                raise ValueError("Recipe name cannot be empty")
+            return v.strip()
+        return v
+
+    @validator("description")
+    def description_validation(cls, v):
+        if v is not None and not v.strip():
+            return None
+        return v
+
+    def create_ingredients(self) -> Optional[List[Ingredient]]:
+        if self.ingredients is None:
+            return None
+        return [
+            Ingredient.create(
+                name=ing_dto.name,
+                quantity=ing_dto.quantity.to_domain(),
+                properties=ing_dto.properties.to_domain(),
+                is_optional=ing_dto.is_optional,
+                substitutes=ing_dto.substitutes,
+            )
+            for ing_dto in self.ingredients
+        ]
+
+    def create_steps(self) -> Optional[List[Step]]:
+        if self.steps is None:
+            return None
+        return [
+            Step(
+                number=len(self.steps) + 1,
+                description=step_dto.description,
+                duration_minutes=step_dto.duration_minutes,
+                technique=step_dto.technique,
+                temperature=step_dto.temperature,
+            )
+            for step_dto in self.steps
+        ]
+
+    def create_tags(self) -> Optional[Set[Tag]]:
+        if self.tags is None:
+            return None
+        return {
+            Tag(name=tag_dto.name, description=tag_dto.description)
+            for tag_dto in self.tags
+        }
+
+    def create_meal_types(self) -> Optional[Set[DomainMealType]]:
+        if self.meal_types is None:
+            return None
+        return {DomainMealType(meal_type) for meal_type in self.meal_types}
+
+    def create_serving_info(self) -> Optional[ServingInfo]:
+        if self.servings is not None:
+            return ServingInfo(servings=self.servings)
+        return None
+
+    def create_cooking_time(self) -> Optional[CookingTime]:
+        if self.prep_time_minutes is not None or self.cook_time_minutes is not None:
+            return CookingTime(
+                prep_minutes=self.prep_time_minutes or 0,
+                cook_minutes=self.cook_time_minutes or 0,
+            )
+        return None
+
+    def create_nutritional_info(self) -> Optional[NutritionalInfo]:
+        if any(
+            [
+                self.calories is not None,
+                self.protein_g is not None,
+                self.carbs_g is not None,
+                self.fat_g is not None,
+            ]
+        ):
+            return NutritionalInfo(
+                calories=self.calories or 0,
+                protein_g=self.protein_g or Decimal("0"),
+                carbs_g=self.carbs_g or Decimal("0"),
+                fat_g=self.fat_g or Decimal("0"),
+            )
+        return None
+
+
+class ScaleRecipeRequest(BaseModel):
+    factor: Decimal = Field(..., gt=0, description="Scaling factor")
+    adjust_cooking_time: bool = Field(
+        default=True, description="Whether to adjust cooking time"
+    )
+
+
+class AddRatingRequest(BaseModel):
+    rating: int = Field(..., ge=1, le=5, description="Rating from 1 to 5")
+
+
+class RecipeSearchRequest(BaseModel):
+    """Pydantic DTO for recipe search requests."""
+
+    # Basic filters
+    name: Optional[str] = Field(
+        None, max_length=200, description="Recipe name (partial match)"
+    )
+    author_id: Optional[int] = Field(None, ge=1, description="Author ID")
+    difficulty: Optional[str] = Field(None, description="Difficulty level")
+    cuisine: Optional[str] = Field(None, description="Cuisine type")
+
+    # Collections filters
+    tags: Optional[List[str]] = Field(
+        None, description="Tags (recipes must have ALL tags)"
+    )
+    meal_types: Optional[List[str]] = Field(None, description="Meal types")
+    ingredient_name: Optional[str] = Field(
+        None, description="Ingredient name (partial match)"
+    )
+
+    # Rating and time filters
+    min_rating: Optional[float] = Field(
+        None, ge=0, le=5, description="Minimum rating (0-5)"
+    )
+    max_cooking_time: Optional[int] = Field(
+        None, ge=1, description="Maximum cooking time in minutes"
+    )
+
+    include_deleted: bool = Field(default=False, description="Include deleted recipes")
+    pagination: PydanticPaginationParams = Field(
+        ..., description="Pagination parameters"
+    )
+
+    @validator("name")
+    def validate_name(cls, v):
+        if v is not None and len(v.strip()) == 0:
+            raise ValueError("Name cannot be empty if provided")
+        return v
+
+    @validator("tags")
+    def validate_tags(cls, v):
+        if v is not None:
+            for tag in v:
+                if len(tag.strip()) == 0:
+                    raise ValueError("Tags cannot be empty")
+        return v
+
+    @validator("meal_types")
+    def validate_meal_types(cls, v):
+        valid_meal_types = {"breakfast", "lunch", "dinner", "snack", "dessert"}
+        if v is not None:
+            for meal_type in v:
+                if meal_type.lower() not in valid_meal_types:
+                    raise ValueError(f"Invalid meal type: {meal_type}")
+        return v
+
+    def to_search_criteria(self):
+        """Convert to domain search criteria."""
+        return RecipeSearchCriteria(
+            name=self.name,
+            author_id=UserId(self.author_id) if self.author_id else None,
+            difficulty=(
+                DomainDifficultyLevel(self.difficulty) if self.difficulty else None
+            ),
+            cuisine=DomainCuisineType(self.cuisine) if self.cuisine else None,
+            tags=set(self.tags) if self.tags else None,
+            meal_types=(
+                {DomainMealType(mt) for mt in self.meal_types}
+                if self.meal_types
+                else None
+            ),
+            ingredient_name=self.ingredient_name,
+            min_rating=self.min_rating,
+            max_cooking_time=self.max_cooking_time,
+            include_deleted=self.include_deleted,
+        )
+
+
+# Response DTOs
+class QuantityResponse(BaseModel):
+    value: Decimal
+    unit: str
+
+
+class IngredientPropertiesResponse(BaseModel):
+    is_vegan: bool
+    is_vegetarian: bool
+    is_gluten_free: bool
+    is_dairy_free: bool
+    allergens: Set[str]
+
+
+class IngredientResponse(BaseModel):
+    id: int
+    name: str
+    quantity: QuantityResponse
+    properties: IngredientPropertiesResponse
+    is_optional: bool
+    substitutes: List[str]
+
+
+class StepResponse(BaseModel):
+    number: int
+    description: str
+    duration_minutes: Optional[int]
+    technique: Optional[str]
+    temperature: Optional[str]
+
+
+class TagResponse(BaseModel):
+    name: str
+    description: Optional[str]
+
+
+class NutritionalInfoResponse(BaseModel):
+    calories: Optional[int]
+    protein_g: Optional[Decimal]
+    carbs_g: Optional[Decimal]
+    fat_g: Optional[Decimal]
+
+
+class RecipeSummaryResponse(BaseModel):
+    id: int
+    name: str
+    author_id: int
+    author_name: Optional[str]
+    description: Optional[str]
+    difficulty: DifficultyLevel
+    cuisine: Optional[CuisineType]
+    image_url: Optional[str]
+    prep_time_minutes: Optional[int]
+    cook_time_minutes: Optional[int]
+    total_time_minutes: Optional[int]
+    servings: Optional[int]
+    average_rating: Optional[Decimal]
+    rating_count: int
+    view_count: int
+    favorite_count: int
+    tags: List[TagResponse]
+    meal_types: List[MealType]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_recipe(cls, recipe: Recipe) -> "RecipeSummaryResponse":
+        return cls(
+            id=recipe.id.value,
+            name=recipe.name,
+            author_id=recipe.author_id.value,
+            author_name=None,
+            description=recipe.description,
+            difficulty=recipe.difficulty,
+            cuisine=recipe.cuisine,
+            image_url=recipe.image_url,
+            prep_time_minutes=(
+                recipe.cooking_time.prep_minutes if recipe.cooking_time else None
+            ),
+            cook_time_minutes=(
+                recipe.cooking_time.cook_minutes if recipe.cooking_time else None
+            ),
+            total_time_minutes=recipe.calculate_total_time(),
+            servings=(recipe.serving_info.servings if recipe.serving_info else None),
+            average_rating=recipe.average_rating,
+            rating_count=recipe.rating_count,
+            view_count=recipe.view_count,
+            favorite_count=recipe.favorite_count,
+            tags=[
+                TagResponse(name=tag.name, description=tag.description)
+                for tag in recipe.tags
+            ],
+            meal_types=list(recipe.meal_types),
+            created_at=recipe.created_at,
+            updated_at=recipe.updated_at,
+        )
+
+    @classmethod
+    def from_recipes(cls, recipes: List[Any]) -> List["RecipeSummaryResponse"]:
+        return [cls.from_recipe(recipe) for recipe in recipes]
+
+
+class RecipeResponse(BaseModel):
+    id: int
+    name: str
+    author_id: int
+    author_name: Optional[str]
+    description: Optional[str]
+    difficulty: DifficultyLevel
+    cuisine: Optional[CuisineType]
+    ingredients: List[IngredientResponse]
+    steps: List[StepResponse]
+    tags: List[TagResponse]
+    meal_types: List[MealType]
+    servings: Optional[int]
+    prep_time_minutes: Optional[int]
+    cook_time_minutes: Optional[int]
+    total_time_minutes: Optional[int]
+    nutritional_info: Optional[NutritionalInfoResponse]
+    average_rating: Optional[Decimal]
+    rating_count: int
+    view_count: int
+    favorite_count: int
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    deleted_at: Optional[datetime]
+
+    @classmethod
+    def from_recipe(cls, recipe) -> "RecipeResponse":
+        ingredients_response = []
+        for ingredient in recipe.get_ingredients():
+            ingredients_response.append(
+                IngredientResponse(
+                    id=ingredient.id.value,
+                    name=ingredient.name,
+                    quantity=QuantityResponse(
+                        value=ingredient.quantity.value, unit=ingredient.quantity.unit
+                    ),
+                    properties=IngredientPropertiesResponse(
+                        is_vegan=ingredient.properties.is_vegan,
+                        is_vegetarian=ingredient.properties.is_vegetarian,
+                        is_gluten_free=ingredient.properties.is_gluten_free,
+                        is_dairy_free=ingredient.properties.is_dairy_free,
+                        allergens=ingredient.properties.allergens,
+                    ),
+                    is_optional=ingredient.is_optional,
+                    substitutes=ingredient.substitutes,
+                )
+            )
+
+        steps_response = []
+        for step in recipe.get_steps():
+            steps_response.append(
+                StepResponse(
+                    number=step.number,
+                    description=step.description,
+                    duration_minutes=step.duration_minutes,
+                    technique=step.technique,
+                    temperature=step.temperature,
+                )
+            )
+
+        tags_response = []
+        for tag in recipe.get_tags():
+            tags_response.append(
+                TagResponse(name=tag.name, description=tag.description)
+            )
+
+        nutritional_info = None
+        if recipe.get_nutritional_info():
+            nutritional_info = NutritionalInfoResponse(
+                calories=recipe.get_nutritional_info().calories,
+                protein_g=recipe.get_nutritional_info().protein_g,
+                carbs_g=recipe.get_nutritional_info().carbs_g,
+                fat_g=recipe.get_nutritional_info().fat_g,
+            )
+
+        return RecipeResponse(
+            id=recipe.id.value,
+            name=recipe.name,
+            author_id=recipe.author_id.value,
+            author_name=None,  # Would need user service to get author name
+            description=recipe.description,
+            difficulty=recipe.difficulty,
+            cuisine=recipe.cuisine,
+            ingredients=ingredients_response,
+            steps=steps_response,
+            tags=tags_response,
+            meal_types=list(recipe.get_meal_types()),
+            servings=(
+                recipe.get_serving_info().servings
+                if recipe.get_serving_info()
+                else None
+            ),
+            prep_time_minutes=(
+                recipe.get_cooking_time().prep_minutes
+                if recipe.get_cooking_time()
+                else None
+            ),
+            cook_time_minutes=(
+                recipe.get_cooking_time().cook_minutes
+                if recipe.get_cooking_time()
+                else None
+            ),
+            total_time_minutes=recipe.calculate_total_time(),
+            nutritional_info=nutritional_info,
+            average_rating=recipe.get_average_rating(),
+            rating_count=recipe._rating_count,
+            view_count=recipe.get_view_count(),
+            favorite_count=recipe.get_favorite_count(),
+            version=recipe.version,
+            created_at=recipe.get_created_at(),
+            updated_at=recipe.get_updated_at(),
+            deleted_at=recipe.deleted_at,
+        )
+
+    class Config:
+        from_attributes = True
+
+
+class RecipeCreatedResponse(BaseModel):
+    id: int
+    name: str
+    message: str = "Recipe created successfully"
+
+
+class RecipeUpdatedResponse(BaseModel):
+    id: int
+    name: str
+    version: int
+    message: str = "Recipe updated successfully"
+
+
+class RecipeDeletedResponse(BaseModel):
+    id: int
+    message: str = "Recipe deleted successfully"
+
+
+class RatingAddedResponse(BaseModel):
+    recipe_id: int
+    new_average_rating: Optional[Decimal]
+    total_ratings: int
+    message: str = "Rating added successfully"
+
+
+class RecipeScaledResponse(BaseModel):
+    original_recipe_id: int
+    scaled_recipe_id: int
+    factor: Decimal
+    message: str = "Recipe scaled successfully"
+
+
+class RecipePageResponse(BaseModel):
+    recipes: List[RecipeSummaryResponse]
+    pagination: PydanticPaginationResponse
+
+    @classmethod
+    def from_page(
+        cls, recipe_page: Page[RecipeSummaryResponse]
+    ) -> "RecipePageResponse":
+        return cls(
+            recipes=recipe_page.items,
+            pagination=PydanticPaginationResponse(
+                total_items=recipe_page.total,
+                total_pages=recipe_page.total_pages,
+                current_page=recipe_page.page,
+                page_size=recipe_page.size,
+                next_page=recipe_page.next_page,
+                previous_page=recipe_page.prev_page,
+            ),
+        )

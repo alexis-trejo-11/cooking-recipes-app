@@ -1,16 +1,16 @@
 import pytest
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.receipt.infrastructure.persistence.repository import (
+from app.modules.recipe.infrastructure.persistence.repository import (
     SQLAlchemyRecipeRepository,
 )
-from app.receipt.infrastructure.persistence.mapper import RecipeMapper
-from app.receipt.domain.models.entities.recipe import Recipe
-from app.receipt.domain.models.entities.ingredient import (
+from app.modules.recipe.infrastructure.persistence.mapper import RecipeMapper
+from app.modules.recipe.domain.models.entities.recipe import Recipe
+from app.modules.recipe.domain.models.entities.ingredient import (
     Ingredient,
     IngredientProperties,
 )
-from app.receipt.domain.models.value_objects.value_objects_standard import (
+from app.modules.recipe.domain.models.value_objects.value_objects_standard import (
     RecipeId,
     IngredientId,
     Quantity,
@@ -20,15 +20,15 @@ from app.receipt.domain.models.value_objects.value_objects_standard import (
     CookingTime,
     NutritionalInfo,
 )
-from app.auth.domain.user import UserId
-from app.receipt.domain.models.value_objects.enums import (
+from app.modules.auth.domain.user import UserId
+from app.modules.recipe.domain.models.value_objects.enums import (
     DifficultyLevel,
     CuisineType,
     MealType,
 )
-from app.utils.core.pagination import PageRequest
+from app.utils.core.pagination import PaginationParams
 from app.utils.core.specification import SQLSpecification
-from app.receipt.application.exceptions import RecipeNotFoundException
+from app.modules.recipe.application.exceptions import RecipeNotFoundException
 from tests.infrastructure.test_sqlalchemy_repository import db_session
 
 
@@ -532,14 +532,16 @@ class TestSQLAlchemyRecipeRepository:
             await repository.save(recipe)
 
         # Import the AllSpecification
-        from app.receipt.infrastructure.persistence.specification import (
+        from app.modules.recipe.infrastructure.persistence.specification import (
             AllSpecification,
         )
 
         spec = AllSpecification()
 
         # Test first page
-        page_request = PageRequest(page=1, size=2, sort_by="created_at", sort_dir="asc")
+        page_request = PaginationParams(
+            page=1, size=2, sort_by="created_at", sort_dir="asc"
+        )
         page = await repository.search(spec, page_request)
 
         assert page.total == 5
@@ -548,7 +550,9 @@ class TestSQLAlchemyRecipeRepository:
         assert page.size == 2
 
         # Test second page
-        page_request = PageRequest(page=2, size=2, sort_by="created_at", sort_dir="asc")
+        page_request = PaginationParams(
+            page=2, size=2, sort_by="created_at", sort_dir="asc"
+        )
         page = await repository.search(spec, page_request)
 
         assert page.total == 5
@@ -556,7 +560,9 @@ class TestSQLAlchemyRecipeRepository:
         assert page.page == 2
 
         # Test last page
-        page_request = PageRequest(page=3, size=2, sort_by="created_at", sort_dir="asc")
+        page_request = PaginationParams(
+            page=3, size=2, sort_by="created_at", sort_dir="asc"
+        )
         page = await repository.search(spec, page_request)
 
         assert page.total == 5
@@ -594,12 +600,12 @@ class TestSQLAlchemyRecipeRepository:
         await repository.save(recipe3)
 
         # Search for "chocolate" (should match 2 recipes)
-        from app.receipt.infrastructure.persistence.specification import (
+        from app.modules.recipe.infrastructure.persistence.specification import (
             RecipeByNameSpecification,
         )
 
         spec = RecipeByNameSpecification(name_pattern="Chocolate")
-        page_request = PageRequest(page=1, size=10)
+        page_request = PaginationParams(page=1, size=10)
         page = await repository.search(spec, page_request)
 
         assert page.total == 2
@@ -646,12 +652,12 @@ class TestSQLAlchemyRecipeRepository:
         await repository.save(recipe3)
 
         # Search for author 1's recipes
-        from app.receipt.infrastructure.persistence.specification import (
+        from app.modules.recipe.infrastructure.persistence.specification import (
             RecipeByAuthorSpecification,
         )
 
         spec = RecipeByAuthorSpecification(author_id=UserId(1))
-        page_request = PageRequest(page=1, size=10)
+        page_request = PaginationParams(page=1, size=10)
         page = await repository.search(spec, page_request)
 
         assert page.total == 2
@@ -702,7 +708,7 @@ class TestSQLAlchemyRecipeRepository:
         await repository.save(recipe3)
 
         # Search: Author 1 + Easy difficulty
-        from app.receipt.infrastructure.persistence.specification_builder import (
+        from app.modules.recipe.infrastructure.persistence.specification_builder import (
             RecipeSearchCriteria,
             RecipeSpecificationBuilder,
         )
@@ -712,7 +718,7 @@ class TestSQLAlchemyRecipeRepository:
             difficulty=DifficultyLevel.EASY,
         )
         spec = RecipeSpecificationBuilder.build_from_criteria(criteria)
-        page_request = PageRequest(page=1, size=10)
+        page_request = PaginationParams(page=1, size=10)
         page = await repository.search(spec, page_request)
 
         assert page.total == 1
@@ -770,14 +776,14 @@ class TestSQLAlchemyRecipeRepository:
         )
         await repository.save(recipe3)
 
-        from app.receipt.infrastructure.persistence.specification import (
+        from app.modules.recipe.infrastructure.persistence.specification import (
             AllSpecification,
         )
 
         spec = AllSpecification()
 
         # Sort by name ascending
-        page_request = PageRequest(page=1, size=10, sort_by="name", sort_dir="asc")
+        page_request = PaginationParams(page=1, size=10, sort_by="name", sort_dir="asc")
         page = await repository.search(spec, page_request)
 
         assert page.items[0].name == "A Recipe"
@@ -785,7 +791,9 @@ class TestSQLAlchemyRecipeRepository:
         assert page.items[2].name == "C Recipe"
 
         # Sort by name descending
-        page_request = PageRequest(page=1, size=10, sort_by="name", sort_dir="desc")
+        page_request = PaginationParams(
+            page=1, size=10, sort_by="name", sort_dir="desc"
+        )
         page = await repository.search(spec, page_request)
 
         assert page.items[0].name == "C Recipe"
@@ -793,7 +801,7 @@ class TestSQLAlchemyRecipeRepository:
         assert page.items[2].name == "A Recipe"
 
         # Sort by created_at ascending (default)
-        page_request = PageRequest(
+        page_request = PaginationParams(
             page=1, size=10, sort_by="created_at", sort_dir="asc"
         )
         page = await repository.search(spec, page_request)

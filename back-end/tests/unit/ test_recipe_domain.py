@@ -4,9 +4,12 @@ from decimal import Decimal
 from datetime import datetime, timezone
 from unittest.mock import Mock
 
-from app.receipt.domain.entities.recipe import Recipe
-from app.receipt.domain.entities.ingredient import Ingredient, IngredientProperties
-from app.receipt.domain.entities.value_objects import (
+from app.modules.recipe.domain.entities.recipe import Recipe
+from app.modules.recipe.domain.entities.ingredient import (
+    Ingredient,
+    IngredientProperties,
+)
+from app.modules.recipe.domain.entities.value_objects import (
     RecipeId,
     UserId,
     IngredientId,
@@ -17,13 +20,13 @@ from app.receipt.domain.entities.value_objects import (
     CookingTime,
     NutritionalInfo,
 )
-from app.receipt.domain.entities.enums import (
+from app.modules.recipe.domain.entities.enums import (
     DifficultyLevel,
     CuisineType,
     MealType,
     DietType,
 )
-from app.receipt.domain.exceptions import (
+from app.modules.recipe.domain.exceptions import (
     RecipeValidationException,
     RecipeDeletedException,
 )

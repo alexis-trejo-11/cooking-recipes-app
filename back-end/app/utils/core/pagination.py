@@ -60,7 +60,7 @@ class Page(Generic[TI]):
         return cls(items=[], total=0, page=page, size=size)
 
     @classmethod
-    def from_list(
+    def from_total_list(
         cls, all_items: list[TI], page: int = 1, size: int = 10
     ) -> "Page[TI]":
         """
@@ -204,7 +204,7 @@ class Page(Generic[TI]):
         return iter(self.items)
 
 
-class PageRequest:
+class PaginationParams:
     """
     A simple class to encapsulate pagination request parameters.
     """
@@ -217,7 +217,7 @@ class PageRequest:
         sort_by: Optional[str] = "created_at",
     ):
         """
-        Initialize a PageRequest instance.
+        Initialize a PaginationParams instance.
 
         Args:
             page: The requested page number (1-indexed). Defaults to 1.

@@ -1,13 +1,13 @@
 import pytest
 import jwt
-from app.auth.application.auth_use_cases import SignUpUseCase, LoginUseCase
-from app.auth.application.dtos import SignUpRequest, LoginRequest
-from app.auth.infrastucture.mocks.mock_repositories import MockUserRepository
-from app.auth.infrastucture.mocks.mock_services import (
+from app.modules.auth.application.auth_use_cases import SignUpUseCase, LoginUseCase
+from app.modules.auth.application.dtos import SignUpRequest, LoginRequest
+from app.modules.auth.infrastucture.mocks.mock_repositories import MockUserRepository
+from app.modules.auth.infrastucture.mocks.mock_services import (
     MockPasswordHasher,
     MockTokenService,
 )
-from app.auth.application.exceptions import (
+from app.modules.auth.application.exceptions import (
     UserAlreadyExistsException,
     InvalidCredentialsException,
 )

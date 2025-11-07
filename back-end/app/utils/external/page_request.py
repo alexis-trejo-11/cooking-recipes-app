@@ -1,17 +1,27 @@
 from pydantic import BaseModel, Field
-from app.utils.core.pagination import PageRequest
+from app.utils.core.pagination import PaginationParams
+from typing import Optional
 
 
-class PydnaticPageRequest(BaseModel):
+class PydanticPaginationResponse(BaseModel):
+    total_items: int
+    total_pages: int
+    current_page: int
+    page_size: int
+    next_page: Optional[int]
+    previous_page: Optional[int]
+
+
+class PydanticPaginationParams(BaseModel):
     page: int = Field(1, ge=1, description="Page number (starting from 1)")
-    page_size: int = Field(20, ge=1, le=100, description="Number of items per page")
-    order_by: str = Field("default", description="Field to order by")
-    sort_direction: str = Field("asc", description="Sort direction: 'asc' or 'desc'")
+    size: int = Field(10, ge=1, le=100, description="Number of items per page")
+    sort_dir: str = Field("asc", description="Sort direction: 'asc' or 'desc'")
+    sort_by: str = Field("created_at", description="Field to sort by")
 
-    def to_request(self) -> PageRequest:
-        return PageRequest(
+    def to_pagination_params(self) -> PaginationParams:
+        return PaginationParams(
             page=self.page,
-            size=self.page_size,
-            sort_by=self.order_by,
-            sort_dir=self.sort_direction,
+            size=self.size,
+            sort_dir=self.sort_dir,
+            sort_by=self.sort_by,
         )

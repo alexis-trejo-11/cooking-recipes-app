@@ -1,11 +1,11 @@
-from app.auth.infrastucture.persitence.sqlalchemy_user_repository import (
+from app.modules.auth.infrastucture.persitence.sqlalchemy_user_repository import (
     SQLAlchemyUserRepository,
 )
 import pytest
 import pytest_asyncio
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from app.auth.domain.user import User, UserRole, UserId
+from app.modules.auth.domain.user import User, UserRole, UserId
 from config.sql_session import Base
 
 

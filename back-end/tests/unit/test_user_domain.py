@@ -2,8 +2,8 @@ import pytest
 from datetime import datetime, timezone
 from unittest.mock import patch
 
-from app.auth.domain.user import User, UserRole, UserId
-from app.auth.domain.exceptions import (
+from app.modules.auth.domain.user import User, UserRole, UserId
+from app.modules.auth.domain.exceptions import (
     UserValidationException,
     UserCreationException,
     UserReconstructionException,
