@@ -1,17 +1,289 @@
+# ============================================
+# SYSTEM FILES
+# ============================================
 .DS_Store
-node_modules/
-dist/
-.env
-.vscode/
-.idea/
-*.log
-coverage/
-*.tmp
-*.bak
-*.swp
 Thumbs.db
+*.swp
+*.swo
+*~
+.AppleDouble
+.LSOverride
 
+# ============================================
+# IDEs and EDITORS
+# ============================================
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+
+# JetBrains IDEs
+.idea/
+.idea_modules/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Other IDEs
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ============================================
+# PYTHON / BACKEND (FastAPI/Flask/Django)
+# ============================================
+# Virtual Environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+.virtualenv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+pytest.log
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Flask
+instance/
+.webassets-cache
+
+# Scrapy
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath
+*.sage.py
+
+# Environments
+.env
+.env.local
+.env.*.local
+*.env
+
+# Alembic
+# Keep alembic/ folder but ignore generated migration files if needed
+# alembic/versions/*.pyc
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db3
+*.s3db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# ============================================
+# BACKEND SPECIFIC PATHS
+# ============================================
+/recipe-back-end/.env
+/recipe-back-end/env/
+/recipe-back-end/venv/
+/recipe-back-end/__pycache__/
+/recipe-back-end/**/__pycache__/
+/recipe-back-end/.pytest_cache/
+/recipe-back-end/htmlcov/
+/recipe-back-end/*.db
+/recipe-back-end/*.sqlite
+/recipe-back-end/*.sqlite3
+/recipe-back-end/logs/
+/recipe-back-end/.coverage
 
 /back-end/.env
-/back-end/env
-/back-end/app/__pycache__/
+/back-end/env/
+/back-end/venv/
+/back-end/__pycache__/
+/back-end/**/__pycache__/
+/back-end/.pytest_cache/
+/back-end/htmlcov/
+/back-end/*.db
+/back-end/*.sqlite
+/back-end/*.sqlite3
+/back-end/logs/
+/back-end/.coverage
+
+# ============================================
+# NODE / ANGULAR / FRONTEND
+# ============================================
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Angular specific
+/.angular/
+/.angular/cache
+.sass-cache/
+/connect.lock
+/libpeerconnection.log
+testem.log
+/typings
+__screenshots__/
+
+# Angular build artifacts
+/dist/
+/dist-server/
+/www/
+/platforms/
+
+# Testing
+/coverage
+*.lcov
+
+# Profiling
+chrome-profiler-events*.json
+
+# Miscellaneous
+/.vscode/chrome
+*.tgz
+
+# ============================================
+# FRONTEND SPECIFIC PATHS
+# ============================================
+/recipe-front-end/node_modules/
+/recipe-front-end/dist/
+/recipe-front-end/.angular/
+/recipe-front-end/coverage/
+/recipe-front-end/npm-debug.log
+/recipe-front-end/yarn-error.log
+
+/front-end/node_modules/
+/front-end/dist/
+/front-end/.angular/
+/front-end/coverage/
+
+# ============================================
+# TEMPORARY FILES
+# ============================================
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*~
+
+# ============================================
+# DOCKER
+# ============================================
+docker-compose.override.yml
+.docker/
+
+# ============================================
+# CI/CD
+# ============================================
+.github/workflows/secrets.yml
+
+# ============================================
+# MISC
+# ============================================
+.vscode-test
+*.code-workspace
