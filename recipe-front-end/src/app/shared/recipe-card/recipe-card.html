@@ -1,1 +1,74 @@
-<p>recipe-card works!</p>
+<article class="recipe-card">
+  <div class="card-image-container">
+    <img
+      [src]="recipe().imageUrl || 'assets/placeholder-recipe().jpg'"
+      [alt]="recipe().name"
+      class="card-image"
+    />
+
+    <!-- Difficulty Badge -->
+    <div class="difficulty-badge {{ getDifficultyClass(recipe().difficulty) }}">
+      {{ getDifficultyText(recipe().difficulty) }}
+    </div>
+
+    <!-- Rating Badge -->
+    @if (recipe().averageRating > 0) {
+    <div class="rating-badge">
+      <svg class="star-icon" viewBox="0 0 20 20">
+        <path
+          d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"
+        />
+      </svg>
+      <span class="rating-value">{{ recipe().averageRating.toFixed(1) }}</span>
+    </div>
+    }
+
+    <!-- Meal Type Badge -->
+    <div class="meal-type-badge">
+      {{ getMealTypeText(recipe().mealType) }}
+    </div>
+  </div>
+
+  <div class="card-content">
+    <h3 class="recipe-title">{{ recipe().name }}</h3>
+
+    <!-- Cuisine -->
+    <p class="recipe-cuisine">{{ getCuisineText(recipe().cuisine) }} Cuisine</p>
+
+    <div class="recipe-stats">
+      <!-- Views -->
+      <div class="stat-item">
+        <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+          />
+        </svg>
+        <span class="stat-text">{{ formatNumber(recipe().viewCount) }} views</span>
+      </div>
+
+      <!-- Favorites -->
+      <div class="stat-item">
+        <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+          />
+        </svg>
+        <span class="stat-text">{{ formatNumber(recipe().favoriteCount) }} favorites</span>
+      </div>
+    </div>
+  </div>
+
+  <a [routerLink]="['/recipes', recipe().id]" class="view-recipe-btn"> View Recipe </a>
+</article>

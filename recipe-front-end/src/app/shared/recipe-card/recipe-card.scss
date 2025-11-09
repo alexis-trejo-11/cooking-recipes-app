@@ -1,0 +1,229 @@
+// src/app/components/recipe-card/recipe-card.component.scss
+.recipe-card {
+  background: white;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+
+    .card-image {
+      transform: scale(1.1);
+    }
+
+    .view-recipe-btn {
+      background: linear-gradient(135deg, #ea580c, #dc2626);
+    }
+  }
+
+  .card-image-container {
+    position: relative;
+    overflow: hidden;
+    height: 14rem;
+    flex-shrink: 0;
+
+    .card-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .difficulty-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(4px);
+      padding: 0.5rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: capitalize;
+      z-index: 2;
+
+      &.difficulty-easy {
+        color: #16a34a;
+        border: 1px solid #dcfce7;
+      }
+
+      &.difficulty-medium {
+        color: #ea580c;
+        border: 1px solid #ffedd5;
+      }
+
+      &.difficulty-hard {
+        color: #dc2626;
+        border: 1px solid #fee2e2;
+      }
+    }
+
+    .rating-badge {
+      position: absolute;
+      bottom: 1rem;
+      left: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(4px);
+      padding: 0.375rem 0.75rem;
+      border-radius: 9999px;
+      z-index: 2;
+      border: 1px solid #fef3c7;
+
+      .star-icon {
+        width: 1rem;
+        height: 1rem;
+        color: #fbbf24;
+        fill: currentColor;
+      }
+
+      .rating-value {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #92400e;
+      }
+    }
+
+    .meal-type-badge {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      background: rgba(99, 102, 241, 0.95);
+      backdrop-filter: blur(4px);
+      color: white;
+      padding: 0.5rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: capitalize;
+      z-index: 2;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+  }
+
+  .card-content {
+    padding: 1.25rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+
+    .recipe-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .recipe-cuisine {
+      color: #6b7280;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      text-transform: capitalize;
+    }
+
+    .recipe-stats {
+      display: flex;
+      gap: 1rem;
+      margin-top: auto;
+
+      .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        color: #6b7280;
+        font-size: 0.75rem;
+
+        .stat-icon {
+          width: 1rem;
+          height: 1rem;
+        }
+
+        .stat-text {
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  .view-recipe-btn {
+    display: block;
+    width: 100%;
+    padding: 0.75rem;
+    text-align: center;
+    background: linear-gradient(135deg, #f97316, #ef4444);
+    color: white;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: none;
+    margin-top: auto;
+    flex-shrink: 0;
+
+    &:hover {
+      background: linear-gradient(135deg, #ea580c, #dc2626);
+    }
+
+    &:focus {
+      outline: 2px solid #f97316;
+      outline-offset: 2px;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 640px) {
+  .recipe-card {
+    .card-image-container {
+      height: 12rem;
+    }
+
+    .card-content {
+      padding: 1rem;
+
+      .recipe-title {
+        font-size: 1.125rem;
+      }
+
+      .recipe-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    }
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .recipe-card {
+    background: #374151;
+
+    .card-content {
+      .recipe-title {
+        color: #f9fafb;
+      }
+
+      .recipe-cuisine {
+        color: #d1d5db;
+      }
+
+      .stat-item {
+        color: #d1d5db;
+      }
+    }
+  }
+}

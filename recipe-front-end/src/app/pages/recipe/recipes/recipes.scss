@@ -1,0 +1,189 @@
+.recipes-container {
+  min-height: 100vh;
+  background-color: #f9fafb;
+
+  .filters-section {
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+
+    .filters-content {
+      max-width: 80rem;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+
+      .page-title {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+      }
+
+      .filters-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+
+        @media (min-width: 768px) {
+          grid-template-columns: repeat(4, 1fr);
+        }
+
+        .filter-input,
+        .filter-select {
+          padding: 0.75rem 1rem;
+          border-radius: 0.75rem;
+          border: 2px solid #e5e7eb;
+          font-size: 1rem;
+          transition: all 0.3s ease;
+          background: white;
+
+          &:focus {
+            outline: none;
+            border-color: #f97316;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+          }
+
+          &::placeholder {
+            color: #9ca3af;
+          }
+        }
+
+        .filter-select {
+          cursor: pointer;
+          appearance: none;
+          background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+          background-position: right 0.5rem center;
+          background-repeat: no-repeat;
+          background-size: 1.5em 1.5em;
+          padding-right: 2.5rem;
+        }
+      }
+
+      .clear-filters-container {
+        margin-top: 1rem;
+        display: flex;
+        justify-content: flex-end;
+
+        .clear-filters-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 1rem;
+          background: #f3f4f6;
+          border: 1px solid #d1d5db;
+          border-radius: 0.5rem;
+          color: #6b7280;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: #e5e7eb;
+            color: #374151;
+          }
+
+          .clear-icon {
+            width: 1rem;
+            height: 1rem;
+          }
+        }
+      }
+    }
+  }
+
+  .recipes-content {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 3rem 1rem;
+
+    .results-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+
+      .results-count {
+        color: #6b7280;
+        font-size: 1rem;
+      }
+
+      .active-filters-badge {
+        background: #ffedd5;
+        color: #9a3412;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+    }
+
+    .recipes-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+
+      @media (min-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      @media (min-width: 1024px) {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .recipe-skeleton {
+        background: #e5e7eb;
+        border-radius: 1rem;
+        height: 24rem;
+        animation: pulse 2s infinite;
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 5rem 1rem;
+
+      .empty-icon {
+        width: 6rem;
+        height: 6rem;
+        color: #d1d5db;
+        margin: 0 auto 1.5rem;
+      }
+
+      .empty-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+      }
+
+      .empty-description {
+        color: #6b7280;
+        margin-bottom: 2rem;
+      }
+
+      .empty-action-btn {
+        background: #f97316;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background: #ea580c;
+        }
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

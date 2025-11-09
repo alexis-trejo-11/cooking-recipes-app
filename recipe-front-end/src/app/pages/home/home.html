@@ -1,1 +1,70 @@
-<p>home works!</p>
+<div class="home-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <h1 class="hero-title">Discover Amazing Recipes</h1>
+      <p class="hero-subtitle">
+        E xplore thousands of delicious recipes from around the world. Cook, share, and enjoy!
+      </p>
+    </div>
+  </section>
+
+  <!-- Content Section -->
+  <section class="content-section">
+    <div class="features-grid">
+      <!-- Feature Cards -->
+      @for (feature of featureCards; track feature.title) {
+      <div class="feature-card">
+        <div class="feature-icon {{ feature.iconClass }}">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              [attr.d]="getIconPath(feature.icon)"
+            />
+          </svg>
+        </div>
+        <h3 class="feature-title">{{ feature.title }}</h3>
+        <p class="feature-description">{{ feature.description }}</p>
+      </div>
+      }
+    </div>
+
+    <!-- Top Rated Recipes Section -->
+    <div class="recipes-section">
+      <div class="section-header">
+        <h2 class="section-title">Top Rated Recipes</h2>
+        <a href="/recipes" class="view-all-link">
+          View All
+          <svg class="link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </a>
+      </div>
+
+      <!-- Recipes Grid -->
+      @if (loadingQuick()) {
+      <div class="recipes-grid">
+        @for (i of [1,2,3]; track i) {
+        <div class="recipe-skeleton"></div>
+        }
+      </div>
+      } @else if (quickRecipes().length > 0) {
+      <div class="recipes-grid">
+        @for (recipe of quickRecipes(); track recipe.id) {
+        <!-- <app-recipe-card [recipe]="recipe" /> -->
+        }
+      </div>
+      } @else {
+      <p class="no-recipes">No recipes available</p>
+      }
+    </div>
+  </section>
+</div>

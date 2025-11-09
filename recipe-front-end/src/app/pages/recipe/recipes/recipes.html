@@ -1,1 +1,88 @@
-<p>recipes works!</p>
+<div class="recipes-container">
+  <div class="filters-section">
+    <div class="filters-content">
+      <h1 class="page-title">Explore Recipes</h1>
+
+      <div class="filters-grid">
+        @for (filterKey of filterKeys; track filterKey) { @let config = filterConfigs[filterKey];
+        @if (config.type === 'text') {
+        <input
+          type="text"
+          [(ngModel)]="filters[filterKey]"
+          (input)="applyFilters()"
+          [placeholder]="config.placeholder"
+          class="filter-input"
+        />
+        } @else if (config.type === 'select') {
+        <select [(ngModel)]="filters[filterKey]" (change)="applyFilters()" class="filter-select">
+          @for (option of config.options; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+        } @else if (config.type === 'number') {
+        <input
+          type="number"
+          [(ngModel)]="filters[filterKey]"
+          (input)="applyFilters()"
+          [placeholder]="config.placeholder"
+          class="filter-input"
+        />
+        } }
+      </div>
+
+      @if (hasActiveFilters()) {
+      <div class="clear-filters-container">
+        <button (click)="clearFilters()" class="clear-filters-btn">
+          Clear Filters
+          <svg class="clear-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+      }
+    </div>
+  </div>
+
+  <div class="recipes-content">
+    @if (loading()) {
+    <div class="recipes-grid">
+      @for (i of [1,2,3,4,5,6]; track i) {
+      <div class="recipe-skeleton"></div>
+      }
+    </div>
+    } @else if (recipes().length > 0) {
+    <div class="results-info">
+      <p class="results-count">Found {{ recipes().length }} recipes</p>
+      @if (hasActiveFilters()) {
+      <span class="active-filters-badge">Filtered</span>
+      }
+    </div>
+    <div class="recipes-grid">
+      @for (recipe of recipes(); track recipe.id) {
+      <app-recipe-card [recipe]="recipe" />
+      }
+    </div>
+    } @else {
+    <div class="empty-state">
+      <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <h3 class="empty-title">No recipes found</h3>
+      <p class="empty-description">Try adjusting your search criteria or filters</p>
+      @if (hasActiveFilters()) {
+      <button (click)="clearFilters()" class="empty-action-btn">Clear All Filters</button>
+      }
+    </div>
+    }
+  </div>
+</div>

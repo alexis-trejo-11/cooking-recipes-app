@@ -1,0 +1,187 @@
+<div class="recipe-detail-container">
+  <!-- Loading State -->
+  @if (loading()) {
+  <div class="loading-container">
+    <div class="image-skeleton"></div>
+    <div class="content-skeleton"></div>
+  </div>
+  <!-- Recipe Detail Display -->
+  } @else if (recipe()) {
+  <!-- Hero Section -->
+  <section class="recipe-hero">
+    <img
+      src="/images/dummy-plate.jpg"
+      alt="{{ recipe()!.name || 'Recipe Image' }}"
+      class="hero-image"
+    />
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <!-- Recipe Badges -->
+      <div class="recipe-badges">
+        <span class="recipe-badge {{ getDifficultyClass(recipe()!.difficulty) }}">
+          {{ recipe()!.difficulty }}
+        </span>
+        @if (recipe()!.cuisine) {
+        <span class="recipe-badge cuisine-badge">
+          {{ recipe()!.cuisine }}
+        </span>
+        }
+      </div>
+
+      <!-- Recipe Title -->
+      <h1 class="recipe-title">{{ recipe()!.name }}</h1>
+      <p class="recipe-description">{{ recipe()!.description }}</p>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <div class="recipe-content">
+    <div class="recipe-layout">
+      <!-- Left Column -->
+      <div class="recipe-main">
+        <!-- Stats Card -->
+        <div class="recipe-card stats-card">
+          <div class="stats-grid">
+            @for (stat of recipeStats(); track stat.label) {
+            <div class="stat-item">
+              <div class="stat-icon {{ stat.bgColor }}-bg">
+                <svg
+                  class="icon {{ stat.iconColor }}-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    [attr.d]="stat.icon"
+                  />
+                </svg>
+              </div>
+              <p class="stat-label">{{ stat.label }}</p>
+              <p class="stat-value">{{ stat.value }}</p>
+            </div>
+            }
+          </div>
+
+          <!-- Scale Recipe -->
+          <div class="scale-recipe-section">
+            <label class="scale-label">Scale Recipe:</label>
+            <div class="scale-controls">
+              <button
+                (click)="decreaseServings()"
+                class="scale-btn decrease-btn"
+                [disabled]="scaledServings() <= 1"
+              >
+                -
+              </button>
+              <span class="servings-count">{{ scaledServings() }}</span>
+              <button (click)="increaseServings()" class="scale-btn increase-btn">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ingredients Card -->
+        <div class="recipe-card ingredients-card">
+          <h2 class="section-title">Ingredients</h2>
+          <ul class="ingredients-list">
+            @for (ingredient of recipe()!.ingredients; track ingredient.id) {
+            <li class="ingredient-item">
+              <div class="ingredient-bullet"></div>
+              <span class="ingredient-text">
+                <span class="ingredient-quantity"
+                  >{{ scaleIngredient(ingredient) }} {{ ingredient.name }}</span
+                >
+                {{ ingredient.name }}
+              </span>
+            </li>
+            }
+          </ul>
+        </div>
+
+        <!-- Instructions Card -->
+        <div class="recipe-card instructions-card">
+          <h2 class="section-title">Instructions</h2>
+          <div class="instructions-list">
+            @for (step of recipe()!.steps; track step.number) {
+            <div class="instruction-step">
+              <div class="step-number">
+                {{ step.number }}
+              </div>
+              <div class="step-content">
+                <p class="step-text">{{ step.description }}</p>
+                @if (step.duration_minutes) {
+                <p class="step-duration">⏱️ {{ step.duration_minutes }} minutes</p>
+                }
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="recipe-sidebar">
+        <div class="sidebar-card sticky-card">
+          <!-- Rating Section -->
+          @if (recipe()!.average_rating) {
+          <div class="rating-section">
+            <div class="rating-display">
+              <span class="rating-value">{{ recipe()!.average_rating?.toFixed(1) }}</span>
+              <svg class="rating-star" viewBox="0 0 20 20">
+                <path
+                  d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"
+                />
+              </svg>
+            </div>
+            <p class="rating-count">{{ recipe()!.rating_count }} ratings</p>
+          </div>
+          }
+
+          <!-- User Rating -->
+          @if (true) {
+          <div class="user-rating-section">
+            <label class="rating-label">Rate this recipe</label>
+            <div class="stars-container">
+              @for (star of stars; track star) {
+              <button
+                (click)="rateRecipe(star)"
+                class="star-btn"
+                [class.active]="star <= userRating()"
+              >
+                <svg class="star-icon" viewBox="0 0 20 20">
+                  <path
+                    d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"
+                  />
+                </svg>
+              </button>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- Tags Section -->
+          @if (recipe()!.tags && recipe()!.tags!.length > 0) {
+          <div class="tags-section">
+            <label class="tags-label">Tags</label>
+            <div class="tags-container">
+              @for (tag of recipe()!.tags; track tag) {
+              <span class="recipe-tag">{{ tag }}</span>
+              }
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+  } @else {
+  <!-- Not Found State -->
+  <div class="not-found-container">
+    <h2 class="not-found-title">Recipe not found</h2>
+    <p class="not-found-description">The recipe you're looking for doesn't exist.</p>
+    <a routerLink="/recipes" class="browse-btn"> Browse Recipes </a>
+  </div>
+  }
+</div>
