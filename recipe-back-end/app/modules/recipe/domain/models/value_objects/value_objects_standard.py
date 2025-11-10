@@ -20,6 +20,9 @@ class RecipeId:
     def __str__(self) -> str:
         return str(self.value)
 
+    def __repr__(self) -> str:
+        return f"RecipeId({self.value})"
+
     def is_valid(self) -> bool:
         """Validar que el ID sea válido."""
         return self.value >= 0
@@ -203,6 +206,9 @@ class Step:
         if self.duration_minutes:
             base += f" ({self.duration_minutes}min)"
         return base
+
+    def __repr__(self) -> str:
+        return f"Step(number={self.number}, description='{self.description[:30]}...')"
 
 
 @dataclass(frozen=True)

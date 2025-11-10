@@ -12,6 +12,9 @@ from app.modules.recipe.domain.models.entities.recipe import (
     DifficultyLevel,
     CuisineType,
     RecipeId,
+    RecipeCreateBasicInfo,
+    RecipeCreateContent,
+    RecipeCreateDetails,
 )
 
 from ..dtos import CreateRecipeRequest, RecipeCreatedResponse, RecipeDeletedResponse
@@ -54,6 +57,34 @@ class CreateRecipeUseCaseImpl(CreateRecipeUseCase):
 
         return RecipeCreatedResponse(id=saved_recipe.id.value, name=saved_recipe.name)
 
+    def create_recipe(self, request: CreateRecipeRequest, author_id: UserId) -> Recipe:
+        basic_info = RecipeCreateBasicInfo(
+            name=request.name,
+            author_id=author_id,
+            description=request.description,
+            difficulty=DifficultyLevel(request.difficulty),
+            cuisine=CuisineType(request.cuisine),
+        )
+
+        createContent = RecipeCreateContent(
+            ingredients=request.create_ingredients(),
+            steps=request.create_steps(),
+            tags=request.create_tags(),
+        )
+
+        details = RecipeCreateDetails(
+            meal_types=request.create_meal_types(),
+            serving_info=request.create_serving_info(),
+            cooking_time=request.create_cooking_time(),
+            nutritional_info=request.create_nutritional_info(),
+        )
+
+        return Recipe.create(
+            basic_info=basic_info,
+            content=createContent,
+            details=details,
+        )
+
     async def _validate_author(self, name: str, author_id: UserId):
         await self._validate_existing_author(author_id)
         await self._validate_not_duplicated_author(name, author_id)
@@ -70,33 +101,6 @@ class CreateRecipeUseCaseImpl(CreateRecipeUseCase):
                 "DUPLICATE_RECIPE_NAME",
             )
 
-    def create_recipe(self, request: CreateRecipeRequest, author_id: UserId) -> Recipe:
-        # Create Value Objects
-        ingredients = request.create_ingredients()
-        steps = request.create_steps()
-        tags = request.create_tags()
-        meal_types = request.create_meal_types()
-        serving_info = request.create_serving_info()
-        cooking_time = request.create_cooking_time()
-        nutritional_info = request.create_nutritional_info()
-
-        recipe = Recipe.create(
-            name=request.name,
-            author_id=author_id,
-            description=request.description,
-            difficulty=DifficultyLevel(request.difficulty),
-            cuisine=CuisineType(request.cuisine),
-            meal_types=meal_types,
-            serving_info=serving_info,
-            cooking_time=cooking_time,
-            nutritional_info=nutritional_info,
-        )
-        recipe.add_ingredients(ingredients)
-        recipe.add_steps(steps)
-        recipe.add_tags(tags)
-
-        return recipe
-
 
 class UpdateRecipeUseCaseImpl(UpdateRecipeUseCase):
     def __init__(self, recipe_repository: RecipeRepository):
@@ -107,7 +111,7 @@ class UpdateRecipeUseCaseImpl(UpdateRecipeUseCase):
     ) -> RecipeUpdatedResponse:
         recipe = await self.recipe_repository.find_by_id_and_author(recipe_id, user_id)
         if not recipe:
-            raise RecipeNotFoundException(f"Recipe with ID {recipe_id} not found")
+            raise RecipeNotFoundException(recipe_id)
 
         recipe.update_basic_info(
             name=request.name,
@@ -156,7 +160,7 @@ class AddRatingUseCaseImpl(AddRatingUseCase):
         logger.info(f"User {user_id} is adding rating to Recipe {recipe_id}")
         recipe = await self.recipe_repository.find_by_id(recipe_id)
         if not recipe:
-            raise RecipeNotFoundException(f"Recipe with ID {recipe_id} not found")
+            raise RecipeNotFoundException(recipe_id)
 
         logger.info(
             f"Adding rating {request.rating} to Recipe {recipe_id} by User {user_id}"
@@ -180,11 +184,11 @@ class IncrementViewCountUseCaseImpl(IncrementViewCountUseCase):
     def __init__(self, recipe_repository: RecipeRepository):
         self.recipe_repository = recipe_repository
 
-    async def execute(self, recipe_id: int) -> None:
+    async def execute(self, recipe_id: RecipeId) -> None:
         logger.info(f"Incrementing view count for Recipe {recipe_id}")
-        recipe = await self.recipe_repository.find_by_id(RecipeId(recipe_id))
+        recipe = await self.recipe_repository.find_by_id(recipe_id)
         if not recipe:
-            raise RecipeNotFoundException(f"Recipe with ID {recipe_id} not found")
+            raise RecipeNotFoundException(recipe_id)
 
         recipe.increment_view_count()
         await self.recipe_repository.save(recipe)
@@ -225,7 +229,7 @@ class DeleteRecipeUseCaseImpl(DeleteRecipeUseCase):
             recipe = await self.recipe_repository.find_by_id(recipe_id)
 
         if not recipe:
-            raise RecipeNotFoundException("recipe not found for delete")
+            raise RecipeNotFoundException(recipe_id)
         logger.info(f"Recipe found for delete: {recipe.id}")
 
         return recipe
@@ -242,7 +246,7 @@ class IncreaseFavoriteUseCaseImpl(IncreaseFavoriteUseCase):
 
         recipe = await self.recipe_repository.find_by_id(recipe_id)
         if not recipe:
-            raise RecipeNotFoundException(f"Recipe with ID {recipe_id} not found")
+            raise RecipeNotFoundException(recipe_id)
 
         recipe.increase_favorite_count()
 
@@ -261,7 +265,7 @@ class DecreaseFavoriteUseCaseImpl(DecreaseFavoriteUseCase):
 
         recipe = await self.recipe_repository.find_by_id(recipe_id)
         if not recipe:
-            raise RecipeNotFoundException(f"Recipe with ID {recipe_id} not found")
+            raise RecipeNotFoundException(recipe_id)
 
         recipe.decrease_favorite_count()
 
@@ -282,7 +286,7 @@ class RestoreRecipeUseCaseImpl(RestoreRecipeUseCase):
             recipe_id, author_id
         )
         if not recipe:
-            raise RecipeNotFoundException(f"Recipe with ID {recipe_id} not found")
+            raise RecipeNotFoundException(recipe_id)
 
         recipe.restore()
 

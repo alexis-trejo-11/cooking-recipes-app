@@ -9,12 +9,26 @@ class DietType(Enum):
     KETO = "keto"
     PALEO = "paleo"
     REGULAR = "regular"
+    UNKNOWN = "unknown"
+
+    def is_valid(self) -> bool:
+        return self != DietType.UNKNOWN and self != None and self != ""
+
+    def __str__(self):
+        return self.value
 
 
 class DifficultyLevel(Enum):
     EASY = "easy"
     MEDIUM = "medium"
     HARD = "hard"
+    UNKNOWN = "unknown"
+
+    def is_valid(self) -> bool:
+        return self != DifficultyLevel.UNKNOWN and self != None and self != ""
+
+    def __str__(self):
+        return self.value
 
 
 class MealType(Enum):
@@ -24,6 +38,12 @@ class MealType(Enum):
     SNACK = "snack"
     DESSERT = "dessert"
     APPETIZER = "appetizer"
+
+    def is_valid(self) -> bool:
+        return self != DietType.UNKNOWN and self != None and self != ""
+
+    def __str__(self):
+        return self.value
 
 
 class CuisineType(Enum):
@@ -37,3 +57,10 @@ class CuisineType(Enum):
     AMERICAN = "american"
     THAI = "thai"
     OTHER = "other"
+    UNKNOWN = "unknown"
+
+    def is_valid(self) -> bool:
+        return self != DietType.UNKNOWN and self != None and self != ""
+
+    def __str__(self):
+        return self.value

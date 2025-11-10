@@ -17,7 +17,7 @@ class CreateRecipeUseCase(ABC):
 
 class GetRecipeUseCase(ABC):
     @abstractmethod
-    async def execute(self, recipe_id_int: int) -> RecipeResponse:
+    async def execute(self, recipe_id: RecipeId) -> RecipeResponse:
         pass
 
 
@@ -79,7 +79,7 @@ class GetUserRecipesUseCase(ABC):
 class ScaleRecipeUseCase(ABC):
     @abstractmethod
     async def execute(
-        self, recipe_id: int, request: ScaleRecipeRequest, user_id: int
+        self, recipe_id: RecipeId, request: ScaleRecipeRequest, user_id: int
     ) -> RecipeScaledResponse:
         pass
 
@@ -94,7 +94,7 @@ class AddRatingUseCase(ABC):
 
 class IncrementViewCountUseCase(ABC):
     @abstractmethod
-    async def execute(self, recipe_id: int) -> None:
+    async def execute(self, recipe_id: RecipeId) -> None:
         pass
 
 
@@ -120,11 +120,11 @@ class RestoreRecipeUseCase(ABC):
 
 class GetRecipeCompatibleDietsUseCase(ABC):
     @abstractmethod
-    async def execute(self, recipe_id: int) -> List[DietType]:
+    async def execute(self, recipe_id: RecipeId) -> List[DietType]:
         pass
 
 
 class GetRecipeAllergensUseCase(ABC):
     @abstractmethod
-    async def execute(self, recipe_id: int) -> List[str]:
+    async def execute(self, recipe_id: RecipeId) -> List[str]:
         pass

@@ -54,14 +54,56 @@ class BaseAppException(Exception):
         }
 
 
-class ClientException(BaseAppException):
-    """Base exception for client errors (4xx)"""
+class DomainException(BaseAppException):
+    """Base exception for domain errors (4xx)"""
 
     def __init__(
         self,
-        message: str = "Client error",
-        error_code: str = "CLIENT_ERROR",
+        message: str = "Domain error occurred",
+        error_code: str = "DOMAIN_ERROR",
         status_code: int = 400,
+        details: Optional[Dict[str, Any]] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(message, error_code, status_code, details, context)
+
+
+class ApplicationException(BaseAppException):
+    """Base exception for application errors (4xx)"""
+
+    def __init__(
+        self,
+        message: str = "Application error occurred",
+        error_code: str = "APPLICATION_ERROR",
+        status_code: int = 400,
+        details: Optional[Dict[str, Any]] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(message, error_code, status_code, details, context)
+
+
+class NotFoundException(BaseAppException):
+    """Base exception for not found errors (404)"""
+
+    def __init__(
+        self,
+        message: str = "Resource not found",
+        error_code: str = "NOT_FOUND",
+        status_code: int = 404,
+        details: Optional[Dict[str, Any]] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(message, error_code, status_code, details, context)
+
+
+class SecurityException(BaseAppException):
+    """Base exception for security-related errors"""
+
+    def __init__(
+        self,
+        message: str = "Security error occurred",
+        error_code: str = "SECURITY_ERROR",
+        status_code: int = 401,
         details: Optional[Dict[str, Any]] = None,
         context: Optional[Dict[str, Any]] = None,
     ):

@@ -4,12 +4,15 @@ from typing import Annotated, Optional, List
 from app.modules.auth.domain.interfaces import TokenService
 from app.modules.auth.domain.user import User, UserRole
 from app.modules.auth.application.exceptions import (
-    AuthenticationError,
     InvalidTokenException,
     UserNotFoundException,
     InsufficientPermissionsError,
     MissingTokenError,
 )
+from app.utils.core.exceptions.modules import (
+    AuthenticationException,
+)
+
 from .app_depencies import get_token_service
 
 security = HTTPBearer(auto_error=False)
@@ -28,10 +31,10 @@ async def get_current_user(
     try:
         user = await token_service.get_user_from_token(credentials.credentials)
         if not user.is_active:
-            raise AuthenticationError("User account is inactive")
+            raise AuthenticationException("User account is inactive")
         return user
     except (InvalidTokenException, UserNotFoundException) as e:
-        raise AuthenticationError(str(e))
+        raise AuthenticationException(str(e))
 
 
 async def get_current_active_user(
@@ -41,7 +44,7 @@ async def get_current_active_user(
     Dependency to get current active user
     """
     if not current_user.is_active:
-        raise AuthenticationError("Inactive user")
+        raise AuthenticationException("Inactive user")
     return current_user
 
 

@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from config.sql_session import Base
+from app.config.sql_session import Base
 from app.modules.recipe.infrastructure.persistence.models import RecipeModel
 
 

@@ -4,7 +4,7 @@ from sqlalchemy import func, select, update, delete, and_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.utils.core.pagination import Page, PaginationParams
-from app.utils.core.specification import SQLSpecification as Specification
+from app.utils.core.specification import Specification
 from app.modules.recipe.domain.interfaces import RecipeRepository
 from app.modules.auth.domain.user import UserId
 from app.modules.recipe.domain.models.entities.recipe import (
@@ -37,36 +37,46 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
         self.session = session
         self.mapper = RecipeMapper()
 
-    async def find_by_id(self, recipe_id: RecipeId) -> Optional[Recipe]:
-        """Get recipe by ID with all related data"""
-        logger.debug(f"Fetching recipe by ID: {recipe_id.value}")
+    async def find_by_id(
+        self, recipe_id: RecipeId, include_deleted: bool = False
+    ) -> Optional[Recipe]:
+        """
+        Get recipe by ID with all related data
 
-        stmt = (
-            select(RecipeModel)
-            .where(RecipeModel.id == recipe_id.value)
-            .where(RecipeModel.deleted_at.is_(None))
-            .options(
-                selectinload(RecipeModel.ingredients),
-                selectinload(RecipeModel.steps),
-                selectinload(RecipeModel.tags),
-                selectinload(RecipeModel.meal_types),
-            )
+        Args:
+            recipe_id: ID of the recipe to find
+            include_deleted: If True, includes soft-deleted recipes
+        """
+        logger.debug(f"Fetching recipe by ID: {recipe_id}")
+
+        stmt = select(RecipeModel).where(RecipeModel.id == recipe_id.value)
+
+        # Filter out deleted recipes unless explicitly requested
+        if not include_deleted:
+            stmt = stmt.where(RecipeModel.deleted_at.is_(None))
+
+        stmt = stmt.options(
+            selectinload(RecipeModel.ingredients),
+            selectinload(RecipeModel.steps),
+            selectinload(RecipeModel.tags),
+            selectinload(RecipeModel.meal_types),
         )
+
         result = await self.session.execute(stmt)
         recipe_model = result.scalar_one_or_none()
 
         if not recipe_model:
-            logger.info(f"Recipe not found: {recipe_id.value}")
+            logger.info(f"Recipe not found: {recipe_id}")
             return None
 
-        logger.debug(f"Recipe found: {recipe_id.value}")
-        return await self.mapper.model_to_entity(recipe_model, self.session)
+        logger.debug(f"Recipe found: {recipe_id}")
+        return self.mapper.model_to_entity(recipe_model)
 
     async def find_by_id_and_author(
         self, recipe_id: RecipeId, author_id: UserId
     ) -> Optional[Recipe]:
         logger.debug(
-            f"Fetching recipe by ID: {recipe_id.value} and author ID: {author_id.value}"
+            f"Fetching recipe by ID: {recipe_id} and author ID: {author_id.value}"
         )
 
         stmt = (
@@ -75,7 +85,9 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
                 and_(
                     RecipeModel.id == recipe_id.value,
                     RecipeModel.author_id == author_id.value,
-                    RecipeModel.deleted_at.is_(None),
+                    RecipeModel.deleted_at.is_(
+                        None
+                    ),  # Aquí sí filtrar por no eliminados
                 )
             )
             .options(
@@ -89,11 +101,11 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
         recipe_model = result.scalar_one_or_none()
 
         if not recipe_model:
-            logger.info(f"Recipe not found: {recipe_id.value}")
+            logger.info(f"Recipe not found: {recipe_id}")
             return None
 
-        logger.debug(f"Recipe found: {recipe_id.value}")
-        return await self.mapper.model_to_entity(recipe_model, self.session)
+        logger.debug(f"Recipe found: {recipe_id}")
+        return self.mapper.model_to_entity(recipe_model)
 
     async def search(
         self, spec: Specification, page_request: PaginationParams
@@ -163,10 +175,7 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
             result = await self.session.execute(query)
             recipe_models = result.scalars().all()
 
-            recipes = [
-                await self.mapper.model_to_entity(model, self.session)
-                for model in recipe_models
-            ]
+            recipes = [self.mapper.model_to_entity(model) for model in recipe_models]
 
             return Page(
                 items=recipes,
@@ -214,7 +223,7 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
 
     async def delete(self, recipe_id: RecipeId) -> bool:
         """Soft delete recipe by ID"""
-        logger.info(f"Soft deleting recipe: {recipe_id.value}")
+        logger.info(f"Soft deleting recipe: {recipe_id}")
 
         stmt = (
             update(RecipeModel)
@@ -232,9 +241,9 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
 
         deleted = result.rowcount > 0
         if deleted:
-            logger.info(f"Successfully soft deleted recipe: {recipe_id.value}")
+            logger.info(f"Successfully soft deleted recipe: {recipe_id}")
         else:
-            logger.warning(f"Recipe not found for deletion: {recipe_id.value}")
+            logger.warning(f"Recipe not found for deletion: {recipe_id}")
 
         return deleted
 
@@ -251,9 +260,18 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
             logger.debug(f"Created recipe with ID: {recipe_id}")
 
             # 2. Create all related entities (they'll use the recipe_id)
+            logger.debug(f"Creating ingredients: {len(recipe.ingredients)}")
             await self._create_ingredients(recipe_id, recipe.ingredients)
+
+            logger.debug(f"Creating steps: {len(recipe.steps)}")
             await self._create_steps(recipe_id, recipe.steps)
+
+            logger.debug(f"Creating tags: {len(recipe.tags)}")
             await self._associate_tags(recipe_id, list(recipe.tags))
+
+            logger.debug(
+                f"Creating meal_types: {len(recipe.meal_types)} - {[mt.value for mt in recipe.meal_types]}"
+            )
             await self._create_meal_types(recipe_id, list(recipe.meal_types))
 
             # 3. Single commit for all operations
@@ -277,34 +295,27 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
         """Update existing recipe with all related entities in a single transaction"""
         try:
             if not recipe.id:
-                raise RecipeNotFoundException("Recipe ID is required for update")
+                raise RecipeNotFoundException(recipe.id)
 
             recipe_id = recipe.id.value
             logger.debug(f"Starting update for recipe: {recipe_id}")
 
             # Update main recipe data
-            updated_version = recipe.version + 1
             current_time = datetime.now(timezone.utc)
 
             recipe_data = self.mapper.entity_to_dict(recipe)
-            recipe_data["version"] = updated_version
             recipe_data["updated_at"] = current_time
 
             stmt = (
                 update(RecipeModel)
-                .where(
-                    and_(
-                        RecipeModel.id == recipe_id,
-                        RecipeModel.deleted_at.is_(None),
-                    )
-                )
+                .where(RecipeModel.id == recipe_id)  # REMOVED deleted_at filter
                 .values(**recipe_data)
             )
 
             result = await self.session.execute(stmt)
             if result.rowcount == 0:
                 logger.warning(f"Recipe not found for update: {recipe_id}")
-                raise RecipeNotFoundException(f"Recipe with ID {recipe.id} not found")
+                raise RecipeNotFoundException(recipe.id)
 
             # Delete old related entities
             await self._delete_ingredients(recipe_id)
@@ -321,7 +332,11 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
             await self.session.commit()
             logger.info(f"Successfully updated recipe: {recipe_id}")
 
-            updated_recipe = await self.find_by_id(recipe.id)
+            # Expire all para forzar recarga desde DB
+            self.session.expire_all()
+
+            # Incluir deleted recipes en caso de que se esté actualizando una eliminada
+            updated_recipe = await self.find_by_id(recipe.id, include_deleted=True)
             if updated_recipe is None:
                 raise RuntimeError(
                     f"Failed to retrieve updated recipe with ID: {recipe_id}"
@@ -338,26 +353,32 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
         if not ingredients:
             return
 
-        ingredient_models = [
-            IngredientModel(
+        ingredient_models = []
+        for ing in ingredients:
+            # SIEMPRE crear nuevos ingredientes sin ID
+            ingredient_model = IngredientModel(
                 recipe_id=recipe_id,
                 name=ing.name,
-                quantity_value=ing.quantity.value if ing.quantity else 0,
-                quantity_unit=ing.quantity.unit if ing.quantity else "",
+                quantity_value=float(ing.quantity.value) if ing.quantity else 0.0,
+                quantity_unit=ing.quantity.unit if ing.quantity else "units",
                 is_optional=ing.is_optional,
                 is_vegan=ing.properties.is_vegan,
                 is_vegetarian=ing.properties.is_vegetarian,
                 is_gluten_free=ing.properties.is_gluten_free,
                 is_dairy_free=ing.properties.is_dairy_free,
-                allergens=list(ing.properties.allergens),
-                substitutes=ing.substitutes,
+                allergens=(
+                    list(ing.properties.allergens) if ing.properties.allergens else []
+                ),
+                substitutes=ing.substitutes or [],
             )
-            for ing in ingredients
-        ]
-        self.session.add_all(ingredient_models)
-        logger.debug(
-            f"Created {len(ingredient_models)} ingredients for recipe {recipe_id}"
-        )
+            ingredient_models.append(ingredient_model)
+
+        if ingredient_models:
+            self.session.add_all(ingredient_models)
+            await self.session.flush()
+            logger.debug(
+                f"Created {len(ingredient_models)} ingredients for recipe {recipe_id}"
+            )
 
     async def _create_steps(self, recipe_id: int, steps: List[Step]):
         """Bulk create steps for a recipe"""
@@ -376,6 +397,7 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
             for step in steps
         ]
         self.session.add_all(step_models)
+        await self.session.flush()
         logger.debug(f"Created {len(step_models)} steps for recipe {recipe_id}")
 
     async def _associate_tags(self, recipe_id: int, tags: List[Tag]):
@@ -403,6 +425,7 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
                 )
                 await self.session.execute(stmt)
 
+        await self.session.flush()
         logger.debug(f"Associated {len(tags)} tags with recipe {recipe_id}")
 
     async def _get_or_create_tag(self, tag: Tag) -> TagModel:
@@ -422,47 +445,61 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
     async def _create_meal_types(self, recipe_id: int, meal_types: List[MealType]):
         """Bulk create meal types for a recipe"""
         if not meal_types:
+            logger.debug(f"No meal types to create for recipe {recipe_id}")
             return
 
-        meal_type_models = [
-            RecipeMealTypeModel(
-                recipe_id=recipe_id,
-                meal_type=meal_type.value,
+        meal_type_models = []
+        for meal_type in meal_types:
+            # Verificar que es un MealType enum
+            if isinstance(meal_type, MealType):
+                meal_type_value = meal_type.value
+            elif isinstance(meal_type, str):
+                meal_type_value = meal_type
+            else:
+                logger.warning(f"Invalid meal type type: {type(meal_type)}")
+                continue
+
+            meal_type_models.append(
+                RecipeMealTypeModel(
+                    recipe_id=recipe_id,
+                    meal_type=meal_type_value,
+                )
             )
-            for meal_type in meal_types
-        ]
-        self.session.add_all(meal_type_models)
-        logger.debug(
-            f"Created {len(meal_type_models)} meal types for recipe {recipe_id}"
-        )
+
+        if meal_type_models:
+            self.session.add_all(meal_type_models)
+            await self.session.flush()
+            logger.debug(
+                f"Created {len(meal_type_models)} meal types for recipe {recipe_id}: {[mt.meal_type for mt in meal_type_models]}"
+            )
+        else:
+            logger.warning(f"No valid meal types to create for recipe {recipe_id}")
 
     async def _delete_ingredients(self, recipe_id: int):
         """Delete all ingredients for a recipe"""
         stmt = delete(IngredientModel).where(IngredientModel.recipe_id == recipe_id)
-        result = await self.session.execute(stmt)
-        logger.debug(f"Deleted {result.rowcount} ingredients for recipe {recipe_id}")
+        await self.session.execute(stmt)
+        logger.debug(f"Deleted ingredients for recipe {recipe_id}")
 
     async def _delete_steps(self, recipe_id: int):
         """Delete all steps for a recipe"""
         stmt = delete(StepModel).where(StepModel.recipe_id == recipe_id)
-        result = await self.session.execute(stmt)
-        logger.debug(f"Deleted {result.rowcount} steps for recipe {recipe_id}")
+        await self.session.execute(stmt)
+        logger.debug(f"Deleted steps for recipe {recipe_id}")
 
     async def _delete_meal_types(self, recipe_id: int):
         """Delete all meal types for a recipe"""
         stmt = delete(RecipeMealTypeModel).where(
             RecipeMealTypeModel.recipe_id == recipe_id
         )
-        result = await self.session.execute(stmt)
-        logger.debug(f"Deleted {result.rowcount} meal types for recipe {recipe_id}")
+        await self.session.execute(stmt)
+        logger.debug(f"Deleted meal types for recipe {recipe_id}")
 
     async def _delete_tag_associations(self, recipe_id: int):
         """Delete all tag associations for a recipe"""
         stmt = delete(recipe_tags).where(recipe_tags.c.recipe_id == recipe_id)
-        result = await self.session.execute(stmt)
-        logger.debug(
-            f"Deleted {result.rowcount} tag associations for recipe {recipe_id}"
-        )
+        await self.session.execute(stmt)
+        logger.debug(f"Deleted tag associations for recipe {recipe_id}")
 
     def _get_sort_column(self, sort_by: str):
         """Get SQLAlchemy column for sorting."""

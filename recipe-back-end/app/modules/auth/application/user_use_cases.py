@@ -1,13 +1,11 @@
 from typing import List, Optional
-from ..dto.auth_dtos import UserResponse, UpdateUserRequest
-from ..interfaces import UserRepository
-from app.application.exceptions import (
+from .dtos import UserResponse, UpdateUserRequest
+from app.modules.auth.domain.interfaces import UserRepository
+from app.modules.auth.application.exceptions import (
     UserNotFoundException,
-    UserAlreadyExistsException,
-    AuthorizationException,
+    AuthAppException as AuthorizationException,
 )
-from app.domain.entities.user import User, UserRole, UserId
-from app.domain.exceptions.user_exceptions import UserUpdateException
+from app.modules.auth.domain.user import User, UserRole, UserId
 
 
 class GetUserUseCase:
@@ -46,45 +44,33 @@ class UpdateUserUseCase:
         self,
         user_id: UserId,
         request: UpdateUserRequest,
-        current_user_id: Optional[UserId] = None,
     ) -> UserResponse:
         """Execute user update"""
-
-        # Authorization: users can only update their own profile unless they're admin
-        if current_user_id and current_user_id != user_id:
-            current_user = await self.user_repository.get_by_id(current_user_id)
-            if not current_user or UserRole.ADMIN not in current_user.roles:
-                raise AuthorizationException("Not authorized to update this user")
-
         user = await self.user_repository.get_by_id(user_id)
         if not user:
             raise UserNotFoundException(f"User with ID {user_id} not found")
 
-        try:
-            if request.first_name is not None or request.last_name is not None:
-                new_first_name = request.first_name or user.first_name
-                new_last_name = request.last_name or user.last_name
-                user.update_names(new_first_name, new_last_name)
+        if request.first_name is not None or request.last_name is not None:
+            new_first_name = request.first_name or user.first_name
+            new_last_name = request.last_name or user.last_name
+            user.update_names(new_first_name, new_last_name)
 
-            if request.phone_number is not None:
-                user.update_phone_number(request.phone_number)
+        if request.phone_number is not None:
+            user.update_phone_number(request.phone_number)
 
-            updated_user = await self.user_repository.save(user)
+        updated_user = await self.user_repository.save(user)
 
-            return UserResponse(
-                user_id=str(updated_user.user_id),
-                first_name=updated_user.first_name,
-                last_name=updated_user.last_name,
-                email=updated_user.email,
-                phone_number=updated_user.phone_number,
-                roles=[role.value for role in updated_user.roles],
-                is_active=updated_user.is_active,
-                joined_at=updated_user.joined_at,
-                last_login=updated_user.last_login,
-            )
-
-        except UserUpdateException as e:
-            raise UserUpdateException(f"Failed to update user: {str(e)}") from e
+        return UserResponse(
+            user_id=str(updated_user.user_id),
+            first_name=updated_user.first_name,
+            last_name=updated_user.last_name,
+            email=updated_user.email,
+            phone_number=updated_user.phone_number,
+            roles=[role.value for role in updated_user.roles],
+            is_active=updated_user.is_active,
+            joined_at=updated_user.joined_at,
+            last_login=updated_user.last_login,
+        )
 
 
 class ListUsersUseCase:
@@ -161,18 +147,9 @@ class ChangeUserRoleUseCase:
         self, user_id: UserId, new_roles: List[UserRole], current_user_id: UserId
     ) -> UserResponse:
         """Execute role change"""
-
-        # Authorization: only admin can change roles
-        current_user = await self.user_repository.get_by_id(current_user_id)
-        if not current_user or UserRole.ADMIN not in current_user.roles:
-            raise AuthorizationException("Not authorized to change user roles")
-
         user = await self.user_repository.get_by_id(user_id)
         if not user:
             raise UserNotFoundException(f"User with ID {user_id} not found")
-
-        # Update roles (this is a simplified implementation)
-        # You might want to add more complex role management logic
         user._roles = new_roles
         updated_user = await self.user_repository.save(user)
 

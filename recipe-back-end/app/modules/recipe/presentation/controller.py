@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/v1/recipes", tags=["Recipes"])
 async def create_recipe(
     request: CreateRecipeRequest,
     use_case: CreateRecipeUseCaseDep,
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ) -> RecipeCreatedResponse:
     """
     Create a new recipe.
@@ -38,7 +38,9 @@ async def create_recipe(
     - **cook_time_minutes**: Cooking time in minutes
     - **nutritional_info**: Optional nutritional information
     """
-    result = await use_case.execute(request, current_user.user_id)
+    result = await use_case.execute(
+        request, UserId(1)
+    )  # Replace with current_user.user_id when auth is enabled
     return result
 
 
@@ -58,10 +60,32 @@ async def get_recipe(
 
     - **recipe_id**: Recipe identifier
     """
-    await increment_views.execute(recipe_id)
+    await increment_views.execute(RecipeId(recipe_id))
 
-    recipe = await use_case.execute(recipe_id)
+    recipe = await use_case.execute(RecipeId(recipe_id))
     return recipe
+
+
+@router.get(
+    "/",
+    response_model=RecipePageResponse,
+    summary="Search Recipes",
+    description="Search recipes with pagination if not filters are provided it will return active recipes paginated by default",
+)
+async def search_recipes(
+    use_case: SearchRecipesUseCaseDep,
+) -> RecipePageResponse:
+    """
+    Search recipes with pagination.
+
+    - **page**: Page number
+    - **page_size**: Page size
+    """
+    pagination = PydanticPaginationParams(
+        page=1, size=10, sort_dir="asc", sort_by="created_at"
+    )
+    request = RecipeSearchRequest(include_deleted=False, pagination=pagination)
+    return await use_case.execute(request)
 
 
 @router.put(
@@ -98,8 +122,8 @@ async def update_recipe(
     description="Delete a recipe (soft delete)",
 )
 async def delete_recipe(
+    use_case: DeleteRecipeUseCaseDep,
     recipe_id: int = Path(..., gt=0, description="Recipe ID"),
-    use_case: DeleteRecipeUseCaseDep = Depends(),
     current_user: User = Depends(get_current_user),
 ) -> RecipeDeletedResponse:
     """

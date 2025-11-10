@@ -22,10 +22,10 @@ class GetRecipeUseCaseImpl(GetRecipeUseCase):
     def __init__(self, recipe_repository: RecipeRepository):
         self.recipe_repository = recipe_repository
 
-    async def execute(self, recipe_id_int: int) -> RecipeResponse:
-        recipe = await self.recipe_repository.find_by_id(RecipeId(recipe_id_int))
+    async def execute(self, recipe_id: RecipeId) -> RecipeResponse:
+        recipe = await self.recipe_repository.find_by_id(recipe_id)
         if not recipe:
-            raise RecipeNotFoundException(f"Recipe with ID {recipe_id_int} not found")
+            raise RecipeNotFoundException(recipe_id)
 
         return RecipeResponse.from_recipe(recipe)
 

@@ -1,4 +1,3 @@
-# app/core/exceptions/handler.py
 import logging
 from typing import Any, Dict, Union
 from fastapi import FastAPI, Request, status
@@ -8,7 +7,9 @@ from pydantic import ValidationError
 
 from app.utils.core.exceptions.base import (
     BaseAppException,
-    ClientException,
+    SecurityException,
+    DomainException,
+    ApplicationException,
     ServerException,
 )
 from app.utils.core.exceptions.modules import *
@@ -27,8 +28,14 @@ class GlobalExceptionHandler:
         """Register all exception handlers"""
         # Custom application exceptions
         self.app.add_exception_handler(BaseAppException, self.handle_app_exception)
-        self.app.add_exception_handler(ClientException, self.handle_client_exception)
         self.app.add_exception_handler(ServerException, self.handle_server_exception)
+        self.app.add_exception_handler(
+            SecurityException, self.handle_security_exception
+        )
+        self.app.add_exception_handler(DomainException, self.handle_domain_exception)
+        self.app.add_exception_handler(
+            ApplicationException, self.handle_application_exception
+        )
 
         # FastAPI and Pydantic exceptions
         self.app.add_exception_handler(
@@ -48,12 +55,30 @@ class GlobalExceptionHandler:
 
         return JSONResponse(status_code=exc.status_code, content=exc.to_dict())
 
-    async def handle_client_exception(
-        self, request: Request, exc: ClientException
+    async def handle_security_exception(
+        self, request: Request, exc: SecurityException
     ) -> JSONResponse:
-        """Handle client exceptions (4xx)"""
+        """Handle security exceptions (4xx)"""
         log_context = self._build_log_context(request, exc)
-        logger.warning(f"Client error: {exc.error_code}", extra=log_context)
+        logger.warning(f"Security error: {exc.error_code}", extra=log_context)
+
+        return JSONResponse(status_code=exc.status_code, content=exc.to_dict())
+
+    async def handle_domain_exception(
+        self, request: Request, exc: DomainException
+    ) -> JSONResponse:
+        """Handle domain exceptions (4xx)"""
+        log_context = self._build_log_context(request, exc)
+        logger.warning(f"Domain error: {exc.error_code}", extra=log_context)
+
+        return JSONResponse(status_code=exc.status_code, content=exc.to_dict())
+
+    async def handle_application_exception(
+        self, request: Request, exc: ApplicationException
+    ) -> JSONResponse:
+        """Handle application exceptions (4xx)"""
+        log_context = self._build_log_context(request, exc)
+        logger.warning(f"Application error: {exc.error_code}", extra=log_context)
 
         return JSONResponse(status_code=exc.status_code, content=exc.to_dict())
 
@@ -92,7 +117,7 @@ class GlobalExceptionHandler:
                     }
                 )
 
-        validation_exc = ClientException(
+        validation_exc = ApplicationException(
             message="Request validation failed",
             error_code="VALIDATION_ERROR",
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

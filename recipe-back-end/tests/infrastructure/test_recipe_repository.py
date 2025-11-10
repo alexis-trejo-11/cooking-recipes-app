@@ -27,7 +27,7 @@ from app.modules.recipe.domain.models.value_objects.enums import (
     MealType,
 )
 from app.utils.core.pagination import PaginationParams
-from app.utils.core.specification import SQLSpecification
+from app.utils.core.specification import Specification
 from app.modules.recipe.application.exceptions import RecipeNotFoundException
 from tests.infrastructure.test_sqlalchemy_repository import db_session
 
@@ -38,8 +38,9 @@ def sample_recipe():
     return Recipe.create(
         name="Test Recipe",
         author_id=UserId(1),
-        description="A test recipe description",
         difficulty=DifficultyLevel.MEDIUM,
+        meal_types={MealType.DINNER, MealType.LUNCH},
+        description="A test recipe description",
         cuisine=CuisineType.ITALIAN,
     )
 
@@ -71,9 +72,9 @@ class TestRecipeMapper:
     def test_entity_to_dict(self, sample_recipe):
         """Test converting recipe entity to dictionary"""
         # Add some data to the recipe
-        sample_recipe.set_serving_info(ServingInfo(servings=4))
-        sample_recipe.set_cooking_time(CookingTime(prep_minutes=15, cook_minutes=30))
-        sample_recipe.set_nutritional_info(
+        sample_recipe.update_serving_info(ServingInfo(servings=4))
+        sample_recipe.update_cooking_time(CookingTime(prep_minutes=15, cook_minutes=30))
+        sample_recipe.update_nutritional_info(
             NutritionalInfo(
                 calories=500,
                 protein_g=Decimal("25.0"),
@@ -280,6 +281,7 @@ class TestSQLAlchemyRecipeRepository:
             name="Recipe 1",
             author_id=UserId(1),
             difficulty=DifficultyLevel.EASY,
+            meal_types={MealType.DINNER},
             description="First recipe",
         )
         recipe1.add_tag(Tag(name="healthy", description="Healthy food"))
@@ -290,6 +292,7 @@ class TestSQLAlchemyRecipeRepository:
             name="Recipe 2",
             author_id=UserId(1),
             difficulty=DifficultyLevel.MEDIUM,
+            meal_types={MealType.LUNCH},
             description="Second recipe",
         )
         recipe2.add_tag(Tag(name="healthy", description="Healthy food"))
@@ -304,16 +307,21 @@ class TestSQLAlchemyRecipeRepository:
         assert any(tag.name == "healthy" for tag in tags)
 
     @pytest.mark.asyncio
-    async def test_save_recipe_with_meal_types(self, db_session, sample_recipe):
+    async def test_save_recipe_with_meal_types(self, db_session):
         """Test saving recipe with meal types"""
         repository = SQLAlchemyRecipeRepository(db_session)
 
-        # Add meal types to recipe
-        sample_recipe.add_meal_type(MealType.DINNER)
-        sample_recipe.add_meal_type(MealType.LUNCH)
+        # Create recipe with meal types
+        recipe = Recipe.create(
+            name="Test Recipe",
+            author_id=UserId(1),
+            difficulty=DifficultyLevel.MEDIUM,
+            meal_types={MealType.DINNER, MealType.LUNCH},
+            description="Test description",
+        )
 
         # Save recipe
-        saved_recipe = await repository.save(sample_recipe)
+        saved_recipe = await repository.save(recipe)
 
         # Retrieve recipe
         retrieved_recipe = await repository.find_by_id(saved_recipe.id)
@@ -337,33 +345,15 @@ class TestSQLAlchemyRecipeRepository:
         saved_recipe = await repository.save(sample_recipe)
         original_version = saved_recipe.version
 
-        # Update recipe data
-        updated_recipe = Recipe.reconstruct(
-            id=saved_recipe.id,
+        # Update recipe using the new method
+        saved_recipe.update_basic_info(
             name="Updated Recipe Name",
-            author_id=saved_recipe.author_id,
             description="Updated description",
             difficulty=DifficultyLevel.HARD,
-            cuisine=saved_recipe.cuisine,
-            ingredients=saved_recipe.ingredients,
-            steps=saved_recipe.steps,
-            tags=saved_recipe.tags,
-            meal_types=saved_recipe.meal_types,
-            serving_info=saved_recipe.serving_info,
-            cooking_time=saved_recipe.cooking_time,
-            nutritional_info=saved_recipe.nutritional_info,
-            rating_sum=saved_recipe.rating_sum,
-            rating_count=saved_recipe.rating_count,
-            view_count=saved_recipe.view_count,
-            favorite_count=saved_recipe.favorite_count,
-            version=saved_recipe.version,
-            created_at=saved_recipe.created_at,
-            updated_at=saved_recipe.updated_at,
-            deleted_at=saved_recipe.deleted_at,
         )
 
         # Update recipe
-        await repository.save(updated_recipe)
+        await repository.save(saved_recipe)
 
         # Retrieve and verify
         retrieved_recipe = await repository.find_by_id(saved_recipe.id)
@@ -400,31 +390,10 @@ class TestSQLAlchemyRecipeRepository:
             substitutes=[],
         )
 
-        updated_recipe = Recipe.reconstruct(
-            id=saved_recipe.id,
-            name=saved_recipe.name,
-            author_id=saved_recipe.author_id,
-            description=saved_recipe.description,
-            difficulty=saved_recipe.difficulty,
-            cuisine=saved_recipe.cuisine,
-            ingredients=[sample_ingredient, ingredient2],  # Updated ingredients
-            steps=saved_recipe.steps,
-            tags=saved_recipe.tags,
-            meal_types=saved_recipe.meal_types,
-            serving_info=saved_recipe.serving_info,
-            cooking_time=saved_recipe.cooking_time,
-            nutritional_info=saved_recipe.nutritional_info,
-            rating_sum=saved_recipe.rating_sum,
-            rating_count=saved_recipe.rating_count,
-            view_count=saved_recipe.view_count,
-            favorite_count=saved_recipe.favorite_count,
-            version=saved_recipe.version,
-            created_at=saved_recipe.created_at,
-            updated_at=saved_recipe.updated_at,
-            deleted_at=saved_recipe.deleted_at,
-        )
+        # Update ingredients using the new method
+        saved_recipe.update_ingredients([sample_ingredient, ingredient2])
 
-        await repository.save(updated_recipe)
+        await repository.save(saved_recipe)
 
         # Verify ingredients were updated
         retrieved_recipe = await repository.find_by_id(saved_recipe.id)
@@ -447,32 +416,10 @@ class TestSQLAlchemyRecipeRepository:
         sample_recipe.add_ingredient(sample_ingredient)
         saved_recipe = await repository.save(sample_recipe)
 
-        # Update with no ingredients
-        updated_recipe = Recipe.reconstruct(
-            id=saved_recipe.id,
-            name=saved_recipe.name,
-            author_id=saved_recipe.author_id,
-            description=saved_recipe.description,
-            difficulty=saved_recipe.difficulty or DifficultyLevel.EASY,
-            cuisine=saved_recipe.cuisine,
-            ingredients=[],  # Empty ingredients
-            steps=saved_recipe.steps,
-            tags=saved_recipe.tags,
-            meal_types=saved_recipe.meal_types,
-            serving_info=saved_recipe.serving_info,
-            cooking_time=saved_recipe.cooking_time,
-            nutritional_info=saved_recipe.nutritional_info,
-            rating_sum=saved_recipe.rating_sum,
-            rating_count=saved_recipe.rating_count,
-            view_count=saved_recipe.view_count,
-            favorite_count=saved_recipe.favorite_count,
-            version=saved_recipe.version,
-            created_at=saved_recipe.created_at,
-            updated_at=saved_recipe.updated_at,
-            deleted_at=saved_recipe.deleted_at,
-        )
+        # Update with no ingredients using the new method
+        saved_recipe.clear_ingredients()
 
-        await repository.save(updated_recipe)
+        await repository.save(saved_recipe)
 
         # Verify ingredients were removed
         retrieved_recipe = await repository.find_by_id(saved_recipe.id)
@@ -485,6 +432,7 @@ class TestSQLAlchemyRecipeRepository:
         repository = SQLAlchemyRecipeRepository(db_session)
         from datetime import datetime
 
+        # Create a recipe with ID that doesn't exist
         recipe = Recipe.reconstruct(
             id=RecipeId(99999),
             name="Nonexistent Recipe",
@@ -527,6 +475,7 @@ class TestSQLAlchemyRecipeRepository:
                 name=f"Recipe {i}",
                 author_id=UserId(1),
                 difficulty=DifficultyLevel.MEDIUM,
+                meal_types={MealType.DINNER},
                 description=f"Description {i}",
             )
             await repository.save(recipe)
@@ -579,6 +528,7 @@ class TestSQLAlchemyRecipeRepository:
             name="Chocolate Cake",
             author_id=UserId(1),
             difficulty=DifficultyLevel.MEDIUM,
+            meal_types={MealType.DINNER},
             description="Delicious chocolate cake",
         )
         await repository.save(recipe1)
@@ -587,6 +537,7 @@ class TestSQLAlchemyRecipeRepository:
             name="Vanilla Cake",
             author_id=UserId(1),
             difficulty=DifficultyLevel.MEDIUM,
+            meal_types={MealType.DINNER},
             description="Classic vanilla cake",
         )
         await repository.save(recipe2)
@@ -596,6 +547,7 @@ class TestSQLAlchemyRecipeRepository:
             author_id=UserId(1),
             description="Crispy chocolate cookies",
             difficulty=DifficultyLevel.EASY,
+            meal_types={MealType.DINNER},
         )
         await repository.save(recipe3)
 
@@ -631,6 +583,7 @@ class TestSQLAlchemyRecipeRepository:
             name="Author 1 Recipe",
             author_id=UserId(1),
             difficulty=DifficultyLevel.EASY,
+            meal_types={MealType.DINNER},
             description="Recipe by author 1",
         )
         await repository.save(recipe1)
@@ -639,6 +592,7 @@ class TestSQLAlchemyRecipeRepository:
             name="Author 2 Recipe",
             author_id=UserId(2),
             difficulty=DifficultyLevel.MEDIUM,
+            meal_types={MealType.DINNER},
             description="Recipe by author 2",
         )
         await repository.save(recipe2)
@@ -647,6 +601,7 @@ class TestSQLAlchemyRecipeRepository:
             name="Another Author 1 Recipe",
             author_id=UserId(1),
             difficulty=DifficultyLevel.EASY,
+            meal_types={MealType.DINNER},
             description="Another recipe by author 1",
         )
         await repository.save(recipe3)
@@ -684,6 +639,7 @@ class TestSQLAlchemyRecipeRepository:
             description="Quick pasta dish",
             difficulty=DifficultyLevel.EASY,
             cuisine=CuisineType.ITALIAN,
+            meal_types={MealType.DINNER},
         )
         recipe1.add_tag(Tag(name="quick", description="Quick recipes"))
         await repository.save(recipe1)
@@ -694,6 +650,7 @@ class TestSQLAlchemyRecipeRepository:
             description="Advanced pasta dish",
             difficulty=DifficultyLevel.HARD,
             cuisine=CuisineType.ITALIAN,
+            meal_types={MealType.DINNER},
         )
         await repository.save(recipe2)
 
@@ -703,6 +660,7 @@ class TestSQLAlchemyRecipeRepository:
             description="Simple tacos",
             difficulty=DifficultyLevel.EASY,
             cuisine=CuisineType.MEXICAN,
+            meal_types={MealType.DINNER},
         )
         recipe3.add_tag(Tag(name="quick", description="Quick recipes"))
         await repository.save(recipe3)
@@ -755,6 +713,7 @@ class TestSQLAlchemyRecipeRepository:
             author_id=UserId(1),
             description="First recipe",
             difficulty=DifficultyLevel.EASY,
+            meal_types={MealType.DINNER},
         )
         await repository.save(recipe1)
         await asyncio.sleep(0.1)  # Small delay to ensure different timestamps
@@ -764,6 +723,7 @@ class TestSQLAlchemyRecipeRepository:
             author_id=UserId(1),
             description="Third recipe",
             difficulty=DifficultyLevel.HARD,
+            meal_types={MealType.DINNER},
         )
         await repository.save(recipe2)
         await asyncio.sleep(0.1)
@@ -773,6 +733,7 @@ class TestSQLAlchemyRecipeRepository:
             author_id=UserId(1),
             description="Second recipe",
             difficulty=DifficultyLevel.MEDIUM,
+            meal_types={MealType.DINNER},
         )
         await repository.save(recipe3)
 
@@ -819,7 +780,7 @@ class TestSQLAlchemyRecipeRepository:
         repository = SQLAlchemyRecipeRepository(db_session)
 
         # Add nutritional info
-        sample_recipe.set_nutritional_info(
+        sample_recipe.update_nutritional_info(
             NutritionalInfo(
                 calories=350,
                 protein_g=Decimal("20.5"),
@@ -853,18 +814,19 @@ class TestSQLAlchemyRecipeRepository:
             description="A complex recipe with all features",
             difficulty=DifficultyLevel.HARD,
             cuisine=CuisineType.MEXICAN,
+            meal_types={MealType.DINNER, MealType.LUNCH},
         )
 
         # Add serving info
-        recipe.set_serving_info(ServingInfo(servings=6, serving_size="1 plate"))
+        recipe.update_serving_info(ServingInfo(servings=6, serving_size="1 plate"))
 
         # Add cooking time
-        recipe.set_cooking_time(
+        recipe.update_cooking_time(
             CookingTime(prep_minutes=20, cook_minutes=45, rest_minutes=10)
         )
 
         # Add nutritional info
-        recipe.set_nutritional_info(
+        recipe.update_nutritional_info(
             NutritionalInfo(
                 calories=450,
                 protein_g=Decimal("30.0"),
@@ -902,7 +864,6 @@ class TestSQLAlchemyRecipeRepository:
         recipe.add_ingredient(ingredient2)
 
         # Add steps
-
         recipe.add_step(
             Step(
                 number=1,
@@ -928,11 +889,9 @@ class TestSQLAlchemyRecipeRepository:
             )
         )
 
-        # Add tags and meal types
+        # Add tags
         recipe.add_tag(Tag(name="mexican", description="Mexican cuisine"))
         recipe.add_tag(Tag(name="comfort-food", description="Comfort food"))
-        recipe.add_meal_type(MealType.DINNER)
-        recipe.add_meal_type(MealType.LUNCH)
 
         # Save and retrieve
         saved_recipe = await repository.save(recipe)
@@ -977,32 +936,9 @@ class TestSQLAlchemyRecipeRepository:
         saved_recipe = await repository.save(sample_recipe)
         assert saved_recipe.version == 1
 
-        # Update recipe
-        updated_recipe = Recipe.reconstruct(
-            id=saved_recipe.id,
-            name="Updated Name",
-            author_id=sample_recipe.author_id,
-            description=saved_recipe.description,
-            difficulty=saved_recipe.difficulty or DifficultyLevel.EASY,
-            cuisine=saved_recipe.cuisine,
-            ingredients=saved_recipe.ingredients,
-            steps=saved_recipe.steps,
-            tags=saved_recipe.tags,
-            meal_types=saved_recipe.meal_types,
-            serving_info=saved_recipe.serving_info,
-            cooking_time=saved_recipe.cooking_time,
-            nutritional_info=saved_recipe.nutritional_info,
-            rating_sum=saved_recipe.rating_sum,
-            rating_count=saved_recipe.rating_count,
-            view_count=saved_recipe.view_count,
-            favorite_count=saved_recipe.favorite_count,
-            version=saved_recipe.version,
-            created_at=saved_recipe.created_at,
-            updated_at=saved_recipe.updated_at,
-            deleted_at=saved_recipe.deleted_at,
-        )
-
-        await repository.save(updated_recipe)
+        # Update recipe using the new method
+        saved_recipe.update_basic_info(name="Updated Name")
+        await repository.save(saved_recipe)
 
         # Verify version incremented
         retrieved_recipe = await repository.find_by_id(saved_recipe.id)
@@ -1018,6 +954,7 @@ class TestSQLAlchemyRecipeRepository:
             name="Minimal Recipe",
             author_id=UserId(1),
             difficulty=DifficultyLevel.EASY,
+            meal_types={MealType.DINNER},
             description="A minimal recipe",
         )
 
@@ -1028,4 +965,97 @@ class TestSQLAlchemyRecipeRepository:
         assert len(retrieved_recipe.ingredients) == 0
         assert len(retrieved_recipe.steps) == 0
         assert len(retrieved_recipe.tags) == 0
-        assert len(retrieved_recipe.meal_types) == 0
+        assert len(retrieved_recipe.meal_types) == 1  # Now meal_types is required
+
+    # ========================================================================
+    # NEW FUNCTIONALITY TESTS
+    # ========================================================================
+
+    @pytest.mark.asyncio
+    async def test_recipe_soft_delete_and_restore(self, db_session, sample_recipe):
+        """Test soft delete and restore functionality"""
+        repository = SQLAlchemyRecipeRepository(db_session)
+
+        # Save recipe
+        saved_recipe = await repository.save(sample_recipe)
+        assert not saved_recipe.is_deleted
+
+        # Soft delete
+        saved_recipe.soft_delete()
+        await repository.save(saved_recipe)
+
+        # Verify deleted
+        retrieved_recipe = await repository.find_by_id(saved_recipe.id)
+        assert retrieved_recipe is None  # Should not find soft-deleted recipes
+
+        # Restore (would need to test with a method that can retrieve deleted recipes)
+        # This would require additional repository methods
+
+    @pytest.mark.asyncio
+    async def test_recipe_update_tracking_info(self, db_session, sample_recipe):
+        """Test updating tracking information"""
+        repository = SQLAlchemyRecipeRepository(db_session)
+
+        # Save recipe
+        saved_recipe = await repository.save(sample_recipe)
+        original_view_count = saved_recipe.view_count
+        original_version = saved_recipe.version
+
+        # Increment view count
+        saved_recipe.increment_view_count()
+        await repository.save(saved_recipe)
+
+        # Retrieve and verify
+        retrieved_recipe = await repository.find_by_id(saved_recipe.id)
+        assert retrieved_recipe is not None
+        assert retrieved_recipe.view_count == original_view_count + 1
+        # View count increment doesn't increase version
+        assert retrieved_recipe.version == original_version
+
+    @pytest.mark.asyncio
+    async def test_recipe_add_rating(self, db_session, sample_recipe):
+        """Test adding rating to recipe"""
+        repository = SQLAlchemyRecipeRepository(db_session)
+
+        # Save recipe
+        saved_recipe = await repository.save(sample_recipe)
+        assert saved_recipe.average_rating is None
+
+        # Add rating
+        saved_recipe.add_rating(4)
+        await repository.save(saved_recipe)
+
+        # Retrieve and verify
+        retrieved_recipe = await repository.find_by_id(saved_recipe.id)
+        assert retrieved_recipe is not None
+        assert retrieved_recipe.average_rating == 4.0
+        assert retrieved_recipe.rating_count == 1
+
+    @pytest.mark.asyncio
+    async def test_recipe_calculate_total_time(self, db_session, sample_recipe):
+        """Test calculating total time"""
+        repository = SQLAlchemyRecipeRepository(db_session)
+
+        # Add cooking time
+        sample_recipe.update_cooking_time(
+            CookingTime(prep_minutes=15, cook_minutes=30, rest_minutes=5)
+        )
+
+        saved_recipe = await repository.save(sample_recipe)
+
+        total_time = saved_recipe.calculate_total_time()
+        assert total_time == 50  # 15 + 30 + 5
+
+    @pytest.mark.asyncio
+    async def test_recipe_get_allergens(
+        self, db_session, sample_recipe, sample_ingredient
+    ):
+        """Test getting allergens from recipe"""
+        repository = SQLAlchemyRecipeRepository(db_session)
+
+        # Add ingredient with allergens
+        sample_recipe.add_ingredient(sample_ingredient)
+        saved_recipe = await repository.save(sample_recipe)
+
+        allergens = saved_recipe.get_allergens()
+        assert "gluten" in allergens

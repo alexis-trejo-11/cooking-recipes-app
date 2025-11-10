@@ -15,8 +15,8 @@ from app.modules.auth.infrastucture.services.bcrypt_password_hasher import (
 from app.modules.auth.infrastucture.persitence.sqlalchemy_user_repository import (
     SQLAlchemyUserRepository,
 )
-from config.sql_session import get_db_session
-from config.config import settings
+from app.config.sql_session import get_db_session
+from app.config.config import settings
 
 security = HTTPBearer(auto_error=False)
 

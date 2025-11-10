@@ -6,7 +6,7 @@ import pytest_asyncio
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from app.modules.auth.domain.user import User, UserRole, UserId
-from config.sql_session import Base
+from app.config.sql_session import Base
 
 
 @pytest_asyncio.fixture(scope="function")

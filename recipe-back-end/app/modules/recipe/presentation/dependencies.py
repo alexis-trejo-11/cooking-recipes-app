@@ -1,6 +1,6 @@
 from fastapi import Depends
-from config.sql_session import get_db_session
-from config.config import settings
+from app.config.sql_session import get_db_session
+from app.config.config import settings
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator, Annotated
 from app.modules.recipe.infrastructure.persistence.repository import (

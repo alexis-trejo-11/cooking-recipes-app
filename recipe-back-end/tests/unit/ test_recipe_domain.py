@@ -4,14 +4,13 @@ from decimal import Decimal
 from datetime import datetime, timezone
 from unittest.mock import Mock
 
-from app.modules.recipe.domain.entities.recipe import Recipe
-from app.modules.recipe.domain.entities.ingredient import (
+from app.modules.recipe.domain.models.entities.recipe import Recipe
+from app.modules.recipe.domain.models.entities.ingredient import (
     Ingredient,
     IngredientProperties,
 )
-from app.modules.recipe.domain.entities.value_objects import (
+from app.modules.recipe.domain.models.value_objects.value_objects_standard import (
     RecipeId,
-    UserId,
     IngredientId,
     Quantity,
     Step,
@@ -20,17 +19,17 @@ from app.modules.recipe.domain.entities.value_objects import (
     CookingTime,
     NutritionalInfo,
 )
-from app.modules.recipe.domain.entities.enums import (
+from app.modules.recipe.domain.models.value_objects.enums import (
     DifficultyLevel,
     CuisineType,
     MealType,
     DietType,
 )
+from app.modules.auth.domain.user import UserId
 from app.modules.recipe.domain.exceptions import (
     RecipeValidationException,
     RecipeDeletedException,
 )
-
 
 # ===== FIXTURES =====
 
@@ -44,6 +43,7 @@ def sample_recipe_data():
         "description": "A test recipe description",
         "difficulty": DifficultyLevel.MEDIUM,
         "cuisine": CuisineType.ITALIAN,
+        "meal_types": {MealType.DINNER, MealType.LUNCH},
     }
 
 
@@ -53,6 +53,8 @@ def minimal_recipe_data():
     return {
         "name": "Minimal Recipe",
         "author_id": UserId(1),
+        "difficulty": DifficultyLevel.MEDIUM,
+        "meal_types": {MealType.DINNER},
     }
 
 
@@ -205,8 +207,8 @@ def sample_recipe_with_tags(sample_recipe):
 @pytest.fixture
 def sample_recipe_with_meal_types(sample_recipe):
     """Sample recipe with meal types."""
+    # Meal types are now set during creation, but we can add more
     sample_recipe.add_meal_type(MealType.BREAKFAST)
-    sample_recipe.add_meal_type(MealType.LUNCH)
     return sample_recipe
 
 
@@ -222,9 +224,9 @@ def sample_recipe_with_metadata(sample_recipe):
         fat_g=Decimal("12.0"),
     )
 
-    sample_recipe.set_cooking_time(cooking_time)
-    sample_recipe.set_serving_info(serving_info)
-    sample_recipe.set_nutritional_info(nutritional_info)
+    sample_recipe.update_cooking_time(cooking_time)
+    sample_recipe.update_serving_info(serving_info)
+    sample_recipe.update_nutritional_info(nutritional_info)
 
     return sample_recipe
 
@@ -246,6 +248,8 @@ class TestRecipeCreation:
         assert recipe.cuisine == CuisineType.ITALIAN
         assert recipe.version == 1
         assert recipe.is_deleted is False
+        assert MealType.DINNER in recipe.meal_types
+        assert MealType.LUNCH in recipe.meal_types
 
     def test_create_recipe_minimal_data(self, minimal_recipe_data):
         """Test recipe creation with minimal required data."""
@@ -254,8 +258,9 @@ class TestRecipeCreation:
         assert recipe.name == "Minimal Recipe"
         assert recipe.author_id == UserId(1)
         assert recipe.description is None
-        assert recipe.difficulty == DifficultyLevel.MEDIUM  # Default
+        assert recipe.difficulty == DifficultyLevel.MEDIUM
         assert recipe.cuisine is None
+        assert MealType.DINNER in recipe.meal_types
 
     def test_create_recipe_invalid_name(self):
         """Test recipe creation fails with invalid name."""
@@ -267,7 +272,12 @@ class TestRecipeCreation:
 
         for invalid_name, error_code in test_cases:
             with pytest.raises(RecipeValidationException) as exc_info:
-                Recipe.create(name=invalid_name, author_id=UserId(1))
+                Recipe.create(
+                    name=invalid_name,
+                    author_id=UserId(1),
+                    difficulty=DifficultyLevel.MEDIUM,
+                    meal_types={MealType.DINNER},
+                )
 
             assert exc_info.value.error_code == error_code
 
@@ -328,9 +338,7 @@ class TestRecipeBasicOperations:
         assert sample_recipe.description == "New description"
         assert sample_recipe.difficulty == DifficultyLevel.HARD
         assert sample_recipe.cuisine == CuisineType.MEXICAN
-        assert (
-            sample_recipe.version == original_version + 1
-        )  # Only one version increment
+        assert sample_recipe.version == original_version + 1
 
 
 class TestRecipeIngredientManagement:
@@ -346,41 +354,61 @@ class TestRecipeIngredientManagement:
         assert sample_recipe.ingredients[-1].name == "Tomato"
         assert sample_recipe.version == 2
 
-    def test_add_duplicate_ingredient(
+    def test_add_duplicate_ingredient_fails(
         self, sample_recipe_with_ingredients, sample_ingredient
     ):
         """Test adding duplicate ingredient fails."""
         recipe = sample_recipe_with_ingredients
         original_ingredient_count = len(recipe.ingredients)
 
-        # Try to add ingredient with same ID
+        # Try to add ingredient with same ID (simulate duplicate)
+        duplicate_ingredient = Ingredient.reconstruct(
+            id=sample_ingredient.id,  # Same ID
+            name="Duplicate Tomato",
+            quantity=Quantity(value=Decimal("300.0"), unit="grams"),
+            properties=IngredientProperties(is_vegan=True, is_vegetarian=True),
+            is_optional=False,
+            substitutes=[],
+        )
+
         with pytest.raises(ValueError) as exc_info:
-            recipe.add_ingredient(sample_ingredient)
+            recipe.add_ingredient(duplicate_ingredient)
 
         assert "already exists" in str(exc_info.value).lower()
         assert len(recipe.ingredients) == original_ingredient_count
 
-    def test_remove_ingredient_success(self, sample_recipe_with_ingredients):
-        """Test successfully removing an ingredient from recipe."""
+    def test_clear_ingredients_success(self, sample_recipe_with_ingredients):
+        """Test successfully clearing all ingredients from recipe."""
         recipe = sample_recipe_with_ingredients
-        original_ingredient_count = len(recipe.ingredients)
-        ingredient_id_to_remove = recipe.ingredients[0].id
+        assert len(recipe.ingredients) > 0
 
-        recipe.remove_ingredient(ingredient_id_to_remove)
+        recipe.clear_ingredients()
 
-        assert len(recipe.ingredients) == original_ingredient_count - 1
-        assert all(ing.id != ingredient_id_to_remove for ing in recipe.ingredients)
-        assert recipe.version == 3  # Initial + add + remove
+        assert len(recipe.ingredients) == 0
+        assert recipe.version == 3  # Initial + add + clear
 
-    def test_remove_nonexistent_ingredient(self, sample_recipe):
-        """Test removing nonexistent ingredient."""
-        original_ingredient_count = len(sample_recipe.ingredients)
-        nonexistent_id = IngredientId(999)
+    def test_update_ingredients(self, sample_recipe):
+        """Test updating the complete list of ingredients."""
+        ingredient1 = Ingredient.create(
+            name="Ingredient 1",
+            quantity=Quantity(value=Decimal("100.0"), unit="grams"),
+            properties=IngredientProperties(),
+            is_optional=False,
+            substitutes=[],
+        )
+        ingredient2 = Ingredient.create(
+            name="Ingredient 2",
+            quantity=Quantity(value=Decimal("200.0"), unit="ml"),
+            properties=IngredientProperties(),
+            is_optional=True,
+            substitutes=[],
+        )
 
-        sample_recipe.remove_ingredient(nonexistent_id)
+        sample_recipe.update_ingredients([ingredient1, ingredient2])
 
-        # Should not raise exception, just do nothing
-        assert len(sample_recipe.ingredients) == original_ingredient_count
+        assert len(sample_recipe.ingredients) == 2
+        assert sample_recipe.ingredients[0].name == "Ingredient 1"
+        assert sample_recipe.ingredients[1].name == "Ingredient 2"
 
 
 class TestRecipeStepManagement:
@@ -397,34 +425,40 @@ class TestRecipeStepManagement:
         assert sample_recipe.steps[-1].description == "New step description"
         assert sample_recipe.version == 2
 
-    def test_reorder_steps_success(self, sample_recipe_with_steps):
-        """Test successfully reordering recipe steps."""
+    def test_add_duplicate_step_number_fails(self, sample_recipe):
+        """Test adding step with duplicate number fails."""
+        step1 = Step(number=1, description="First step", duration_minutes=5)
+        step2 = Step(
+            number=1, description="Duplicate step", duration_minutes=3
+        )  # Same number
+
+        sample_recipe.add_step(step1)
+
+        with pytest.raises(ValueError) as exc_info:
+            sample_recipe.add_step(step2)
+
+        assert "already exists" in str(exc_info.value).lower()
+
+    def test_clear_steps_success(self, sample_recipe_with_steps):
+        """Test successfully clearing all steps."""
         recipe = sample_recipe_with_steps
-        original_step_order = [step.number for step in recipe.steps]
+        assert len(recipe.steps) > 0
 
-        # Reorder steps: [1, 2, 3] -> [3, 1, 2]
-        new_order = [3, 1, 2]
-        recipe.reorder_steps(new_order)
+        recipe.clear_steps()
 
-        new_step_order = [step.number for step in recipe.steps]
-        assert new_step_order == [1, 2, 3]  # Should be renumbered sequentially
-        assert [step.description for step in recipe.steps] == [
-            "Third step",
-            "First step",
-            "Second step",
-        ]
+        assert len(recipe.steps) == 0
+        assert recipe.version == 4  # Initial + 3 adds + clear
 
-    def test_reorder_steps_invalid(self, sample_recipe_with_steps):
-        """Test reordering steps with invalid order fails."""
-        recipe = sample_recipe_with_steps
+    def test_update_steps(self, sample_recipe):
+        """Test updating the complete list of steps."""
+        step1 = Step(number=1, description="Step 1", duration_minutes=5)
+        step2 = Step(number=2, description="Step 2", duration_minutes=10)
 
-        # Invalid: wrong number of steps
-        with pytest.raises(ValueError):
-            recipe.reorder_steps([1, 2])  # Missing step 3
+        sample_recipe.update_steps([step1, step2])
 
-        # Invalid: duplicate numbers
-        with pytest.raises(ValueError):
-            recipe.reorder_steps([1, 1, 2])
+        assert len(sample_recipe.steps) == 2
+        assert sample_recipe.steps[0].description == "Step 1"
+        assert sample_recipe.steps[1].description == "Step 2"
 
 
 class TestRecipeTagManagement:
@@ -441,57 +475,97 @@ class TestRecipeTagManagement:
         assert any(t.name == "new_tag" for t in sample_recipe.tags)
         assert sample_recipe.version == 2
 
-    def test_remove_tag_success(self, sample_recipe_with_tags):
-        """Test successfully removing a tag from recipe."""
+    def test_clear_tags_success(self, sample_recipe_with_tags):
+        """Test successfully clearing all tags."""
         recipe = sample_recipe_with_tags
         original_tag_count = len(recipe.tags)
-        tag_to_remove = next(iter(recipe.tags))
+        assert original_tag_count > 0
 
-        recipe.remove_tag(tag_to_remove)
+        recipe.clear_tags()
 
-        assert len(recipe.tags) == original_tag_count - 1
-        assert tag_to_remove not in recipe.tags
+        assert len(recipe.tags) == 0
+        assert recipe.version == 4  # Initial + 3 adds + clear
 
-    def test_remove_nonexistent_tag(self, sample_recipe):
-        """Test removing nonexistent tag."""
-        original_tag_count = len(sample_recipe.tags)
-        nonexistent_tag = Tag(name="nonexistent", description="Does not exist")
+    def test_update_tags(self, sample_recipe):
+        """Test updating the complete set of tags."""
+        tag1 = Tag(name="tag1", description="First tag")
+        tag2 = Tag(name="tag2", description="Second tag")
 
-        sample_recipe.remove_tag(nonexistent_tag)
+        sample_recipe.update_tags({tag1, tag2})
 
-        # Should not raise exception, just do nothing
-        assert len(sample_recipe.tags) == original_tag_count
+        assert len(sample_recipe.tags) == 2
+        assert any(t.name == "tag1" for t in sample_recipe.tags)
+        assert any(t.name == "tag2" for t in sample_recipe.tags)
+
+
+class TestRecipeMealTypeManagement:
+    """Test cases for Recipe meal type management."""
+
+    def test_add_meal_type_success(self, sample_recipe):
+        """Test successfully adding a meal type."""
+        original_meal_type_count = len(sample_recipe.meal_types)
+
+        sample_recipe.add_meal_type(MealType.BREAKFAST)
+
+        assert len(sample_recipe.meal_types) == original_meal_type_count + 1
+        assert MealType.BREAKFAST in sample_recipe.meal_types
+        assert sample_recipe.version == 2
+
+    def test_clear_meal_types_success(self, sample_recipe):
+        """Test successfully clearing all meal types."""
+        # Add some meal types first
+        sample_recipe.add_meal_type(MealType.BREAKFAST)
+        sample_recipe.add_meal_type(MealType.SNACK)
+        original_count = len(sample_recipe.meal_types)
+        assert original_count > 0
+
+        sample_recipe.clear_meal_types()
+
+        assert len(sample_recipe.meal_types) == 0
+        # Version: initial + 2 adds + clear
+        assert sample_recipe.version == 4
+
+    def test_update_meal_types(self, sample_recipe):
+        """Test updating the complete set of meal types."""
+        new_meal_types = {MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER}
+
+        sample_recipe.update_meal_types(new_meal_types)
+
+        assert len(sample_recipe.meal_types) == 3
+        assert MealType.BREAKFAST in sample_recipe.meal_types
+        assert MealType.LUNCH in sample_recipe.meal_types
+        assert MealType.DINNER in sample_recipe.meal_types
 
 
 class TestRecipeMetadataOperations:
     """Test cases for Recipe metadata operations."""
 
-    def test_set_serving_info_success(self, sample_recipe):
-        """Test successfully setting serving info."""
+    def test_update_serving_info_success(self, sample_recipe):
+        """Test successfully updating serving info."""
         serving_info = ServingInfo(servings=4, serving_size="1 cup")
 
-        sample_recipe.set_serving_info(serving_info)
+        sample_recipe.update_serving_info(serving_info)
 
         assert sample_recipe.serving_info == serving_info
         assert sample_recipe.version == 2
 
-    def test_set_cooking_time_success(self, sample_recipe):
-        """Test successfully setting cooking time."""
+    def test_update_cooking_time_success(self, sample_recipe):
+        """Test successfully updating cooking time."""
         cooking_time = CookingTime(prep_minutes=15, cook_minutes=30)
 
-        sample_recipe.set_cooking_time(cooking_time)
+        sample_recipe.update_cooking_time(cooking_time)
 
         assert sample_recipe.cooking_time == cooking_time
-        assert sample_recipe.cooking_time.total_minutes == 45
+        assert sample_recipe.cooking_time.calculate_total_minutes() == 45
         assert sample_recipe.version == 2
 
-    def test_set_nutritional_info_success(self, sample_recipe):
-        """Test successfully setting nutritional info."""
+    def test_update_nutritional_info_success(self, sample_recipe):
+        """Test successfully updating nutritional info."""
         nutritional_info = NutritionalInfo(
             calories=350, protein_g=Decimal("15.0"), carbs_g=Decimal("45.0")
         )
 
-        sample_recipe.set_nutritional_info(nutritional_info)
+        sample_recipe.update_nutritional_info(nutritional_info)
 
         assert sample_recipe.nutritional_info == nutritional_info
         assert sample_recipe.version == 2
@@ -526,7 +600,7 @@ class TestRecipeCalculations:
     def test_get_nutritional_info_no_serving_info(self, sample_recipe):
         """Test nutritional info per serving returns None when no serving info."""
         nutritional_info = NutritionalInfo(calories=350)
-        sample_recipe.set_nutritional_info(nutritional_info)
+        sample_recipe.update_nutritional_info(nutritional_info)
         # Don't set serving info
 
         per_serving_info = sample_recipe.get_nutritional_info_per_serving()
@@ -606,11 +680,31 @@ class TestRecipeTracking:
     def test_increment_favorite_count(self, sample_recipe):
         """Test incrementing favorite count."""
         original_favorite_count = sample_recipe.favorite_count
+        original_version = sample_recipe.version
 
         sample_recipe.increment_favorite_count()
 
         assert sample_recipe.favorite_count == original_favorite_count + 1
-        assert sample_recipe.version == 2
+        assert sample_recipe.version == original_version + 1
+
+    def test_decrement_favorite_count(self, sample_recipe):
+        """Test decrementing favorite count."""
+        # First increment to have something to decrement
+        sample_recipe.increment_favorite_count()
+        original_favorite_count = sample_recipe.favorite_count
+        original_version = sample_recipe.version
+
+        sample_recipe.decrease_favorite_count()
+
+        assert sample_recipe.favorite_count == original_favorite_count - 1
+        assert sample_recipe.version == original_version + 1
+
+    def test_decrement_favorite_count_at_zero_fails(self, sample_recipe):
+        """Test decrementing favorite count when already at zero fails."""
+        assert sample_recipe.favorite_count == 0
+
+        with pytest.raises(ValueError):
+            sample_recipe.decrease_favorite_count()
 
 
 class TestRecipeDeletion:
@@ -651,6 +745,15 @@ class TestRecipeDeletion:
         with pytest.raises(RecipeDeletedException):
             sample_recipe.add_rating(5)
 
+    def test_restore_non_deleted_recipe(self, sample_recipe):
+        """Test restoring a recipe that is not deleted does nothing."""
+        original_version = sample_recipe.version
+
+        sample_recipe.restore()  # Should not change anything
+
+        assert sample_recipe.is_deleted is False
+        assert sample_recipe.version == original_version  # No version change
+
 
 class TestRecipeRepresentation:
     """Test cases for Recipe string representation."""
@@ -668,18 +771,28 @@ class TestRecipeRepresentation:
         str_repr = str(sample_recipe)
 
         assert sample_recipe.name in str_repr
-        assert sample_recipe.author_id.value in str_repr
+        assert str(sample_recipe.author_id.value) in str_repr
         assert sample_recipe.difficulty.value in str_repr
 
     def test_equality(self):
         """Test recipe equality based on ID."""
-        recipe1 = Recipe.create(name="Recipe 1", author_id=UserId(1))
-        recipe2 = Recipe.create(name="Recipe 2", author_id=UserId(2))
+        recipe1 = Recipe.create(
+            name="Recipe 1",
+            author_id=UserId(1),
+            difficulty=DifficultyLevel.MEDIUM,
+            meal_types={MealType.DINNER},
+        )
+        recipe2 = Recipe.create(
+            name="Recipe 2",
+            author_id=UserId(2),
+            difficulty=DifficultyLevel.MEDIUM,
+            meal_types={MealType.DINNER},
+        )
 
         # Different IDs should not be equal
         assert recipe1 != recipe2
 
-        # Same ID should make them equal (need to reconstruct with same ID)
+        # Same ID should make them equal
         same_id = RecipeId(1)
         reconstructed1 = Recipe.reconstruct(
             id=same_id,
@@ -746,6 +859,7 @@ class TestRecipeIntegration:
             description="A recipe for integration testing",
             difficulty=DifficultyLevel.EASY,
             cuisine=CuisineType.MEXICAN,
+            meal_types={MealType.DINNER},
         )
 
         assert recipe.version == 1
@@ -769,12 +883,12 @@ class TestRecipeIntegration:
         tag1 = Tag(name="easy", description="Easy to make")
         recipe.add_tag(tag1)
 
-        # Add meal types
-        recipe.add_meal_type(MealType.DINNER)
+        # Add more meal types
+        recipe.add_meal_type(MealType.LUNCH)
 
         # Set metadata
         cooking_time = CookingTime(prep_minutes=5, cook_minutes=15)
-        recipe.set_cooking_time(cooking_time)
+        recipe.update_cooking_time(cooking_time)
 
         # Add ratings
         recipe.add_rating(5)
@@ -789,7 +903,7 @@ class TestRecipeIntegration:
         assert len(recipe.ingredients) == 1
         assert len(recipe.steps) == 1
         assert len(recipe.tags) == 1
-        assert len(recipe.meal_types) == 1
+        assert len(recipe.meal_types) == 2  # DINNER + LUNCH
         assert recipe.cooking_time is not None
         assert recipe.average_rating == 4.5
         assert recipe.view_count == 1

@@ -7,12 +7,22 @@ import asyncio
 from alembic import context
 import os
 import sys
+from app.modules.auth.infrastucture.persitence.models import UserModel
+from app.modules.recipe.infrastructure.persistence.models import (
+    RecipeModel,
+    IngredientModel,
+    TagModel,
+    RecipeMealTypeModel,
+    StepModel,
+    recipe_tags,
+)
+
 
 # Add the app directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from config.config import settings
-from app.infrastructure.persistence.models.models import Base
+from app.config.config import settings
+from app.config.sql_session import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

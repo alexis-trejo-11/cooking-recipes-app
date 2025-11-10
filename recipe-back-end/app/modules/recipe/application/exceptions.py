@@ -1,76 +1,40 @@
-class ApplicationException(Exception):
-    """Base exception for application layer errors"""
-
-    pass
-
-
-class AuthenticationException(ApplicationException):
-    """Authentication related errors"""
-
-    pass
+from typing import Any, Dict
+from app.utils.core.exceptions.modules import RecipeException
+from app.utils.core.exceptions.base import NotFoundException
+from app.modules.recipe.domain.models.entities.recipe import RecipeId
 
 
-class AuthorizationException(ApplicationException):
-    """Authorization related errors"""
-
-    pass
-
-
-class UserNotFoundException(ApplicationException):
-    """User not found errors"""
-
-    pass
-
-
-class UserAlreadyExistsException(ApplicationException):
-    """User already exists errors"""
-
-    pass
-
-
-class InvalidCredentialsException(AuthenticationException):
-    """Invalid credentials errors"""
-
-    pass
-
-
-class InvalidTokenException(AuthenticationException):
-    """Invalid token errors"""
-
-    pass
-
-
-class RecipeNotFoundException(ApplicationException):
+class RecipeNotFoundException(NotFoundException):
     """Recipe not found errors"""
 
-    pass
+    def __init__(
+        self,
+        recipe_id: RecipeId,
+    ):
+        super().__init__(
+            f"Recipe with ID '{recipe_id}' not found.", "NOT_FOUND", 404, {}, {}
+        )
 
 
-class RecipeDomainException(ApplicationException):
+class RecipeDomainException(RecipeException):
     """Base exception for recipe domain errors"""
 
     pass
 
 
-class RecipeValidationException(RecipeDomainException):
+class RecipeValidationException(RecipeException):
     """Recipe validation errors"""
 
     pass
 
 
-class RecipeAlreadyExistsException(ApplicationException):
+class RecipeAlreadyExistsException(RecipeException):
     """Recipe already exists errors"""
 
     pass
 
 
-class UnauthorizedException(ApplicationException):
-    """Unauthorized access errors"""
-
-    pass
-
-
-class InvalidRecipeDataException(ApplicationException):
+class InvalidRecipeDataException(RecipeException):
     """Invalid recipe data errors"""
 
     pass

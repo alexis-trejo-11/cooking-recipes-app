@@ -1,16 +1,17 @@
 import logging
-from typing import Optional, Set, List, TYPE_CHECKING
+from typing import Optional, Set, List
 from datetime import datetime
-from ...exceptions import *
 from app.modules.auth.domain.user import UserId
+from ...exceptions import *
+from ..value_objects.param_dtos import *
 from ..value_objects.value_objects_standard import *
+from ..value_objects.enums import DifficultyLevel, CuisineType, MealType, DietType
 from ..value_objects.value_objects_compound import (
     RecipeCollections,
     RecipeTrackingInfo,
     RecipeMetadata,
     TimeStamps,
 )
-from ..value_objects.enums import DifficultyLevel, CuisineType, MealType, DietType
 from .ingredient import Ingredient
 
 
@@ -29,10 +30,11 @@ class Recipe:
         """Inicializar Recipe con valores por defecto."""
         self._id: RecipeId = RecipeId()
         self._name: str = ""
-        self._author_id: Optional[UserId] = None
         self._description: Optional[str] = None
-        self._difficulty: Optional[DifficultyLevel] = None
-        self._cuisine: Optional[CuisineType] = None
+        self._image_url: Optional[str] = None
+        self._author_id: UserId = UserId.zero()
+        self._difficulty: DifficultyLevel = DifficultyLevel.UNKNOWN
+        self._cuisine: CuisineType = CuisineType.UNKNOWN
         self._collections: RecipeCollections = RecipeCollections()
         self._tracking_info: RecipeTrackingInfo = RecipeTrackingInfo()
         self._metadata: RecipeMetadata = RecipeMetadata()
@@ -41,25 +43,17 @@ class Recipe:
     @classmethod
     def create(
         cls,
-        name: str,
-        author_id: UserId,
-        difficulty: DifficultyLevel,
-        meal_types: Set[MealType],
-        description: Optional[str] = None,
-        cuisine: Optional[CuisineType] = None,
-        serving_info: Optional[ServingInfo] = None,
-        cooking_time: Optional[CookingTime] = None,
-        nutritional_info: Optional[NutritionalInfo] = None,
+        basic_info: RecipeCreateBasicInfo,
+        content: RecipeCreateContent,
+        details: RecipeCreateDetails,
     ) -> "Recipe":
         """
         Constructor estático para crear una nueva Recipe.
 
         Args:
-            name: Nombre de la receta
-            author_id: ID del autor
-            description: Descripción opcional
-            difficulty: Nivel de dificultad
-            cuisine: Tipo de cocina opcional
+            basic_info: Información básica (nombre, autor, descripción, etc.)
+            content: Contenido (ingredientes, pasos, tags)
+            details: Detalles (meal types, serving info, cooking time)
 
         Returns:
             Recipe: Nueva instancia de Recipe
@@ -67,188 +61,89 @@ class Recipe:
         Raises:
             RecipeValidationException: Si la validación falla
         """
-        # Validaciones
-        if not name or not name.strip():
-            raise RecipeValidationException("Recipe name cannot be empty", "EMPTY_NAME")
-
-        if len(name.strip()) > 200:
-            raise RecipeValidationException(
-                "Recipe name cannot exceed 200 characters", "NAME_TOO_LONG"
-            )
-
+        # Validaciones de información básica
         recipe = cls()
-        # Set Attributes
-        recipe._id = RecipeId.generate()
-        recipe._name = name.strip()
-        recipe._author_id = author_id
-        recipe._description = description.strip() if description else None
-        recipe._difficulty = difficulty
-        recipe._cuisine = cuisine
 
-        # Set Value Objects
-        recipe._collections.add_meal_types(meal_types)
-        recipe._timestamps = TimeStamps.create()
-        if serving_info:
-            recipe._metadata = recipe._metadata.update_serving_info(serving_info)
-        if cooking_time:
-            recipe._metadata = recipe._metadata.update_cooking_time(cooking_time)
-        if nutritional_info:
+        recipe._id = RecipeId.generate()
+        recipe._name = basic_info.name.strip()
+        recipe._author_id = basic_info.author_id
+        recipe._description = basic_info.description
+        recipe._difficulty = basic_info.difficulty
+        recipe._cuisine = basic_info.cuisine
+
+        recipe._collections = recipe._collections.add_meal_types(details.meal_types)
+        recipe._collections = recipe._collections.add_ingredients(content.ingredients)
+        recipe._collections = recipe._collections.add_steps(content.steps)
+        recipe._collections = recipe._collections.add_tags(content.tags)
+
+        recipe._metadata = recipe._metadata.update_serving_info(details.serving_info)
+        recipe._metadata = recipe._metadata.update_cooking_time(details.cooking_time)
+
+        if details.nutritional_info:
             recipe._metadata = recipe._metadata.update_nutritional_info(
-                nutritional_info
+                details.nutritional_info
             )
 
+        recipe._timestamps = TimeStamps.create()
         logger.info(
             f"Recipe created: {recipe.id} - '{recipe.name}' by {recipe.author_id}"
         )
         return recipe
 
     @classmethod
-    def reconstruct(
-        cls,
-        id: RecipeId,
-        name: str,
-        author_id: UserId,
-        description: Optional[str],
-        difficulty: DifficultyLevel,
-        cuisine: Optional[CuisineType],
-        ingredients: List[Ingredient],
-        steps: List[Step],
-        tags: Set[Tag],
-        meal_types: Set[MealType],
-        serving_info: Optional[ServingInfo],
-        cooking_time: Optional[CookingTime],
-        nutritional_info: Optional[NutritionalInfo],
-        rating_sum: int,
-        rating_count: int,
-        view_count: int,
-        favorite_count: int,
-        version: int,
-        created_at: datetime,
-        updated_at: datetime,
-        deleted_at: Optional[datetime],
-    ) -> "Recipe":
+    def reconstruct(cls, data: RecipeReconstructData) -> "Recipe":
         """
         Reconstruir Recipe desde persistencia.
 
+        NO hace validaciones porque los datos vienen de la DB
+        y ya fueron validados al momento de crear/actualizar.
+
         Args:
-            Todos los parámetros necesarios para reconstruir el estado completo
+            data: Todos los datos necesarios para reconstruir
 
         Returns:
             Recipe: Instancia reconstruida
         """
         recipe = cls()
-        recipe._id = id
-        recipe._name = name
-        recipe._author_id = author_id
-        recipe._description = description
-        recipe._difficulty = difficulty
-        recipe._cuisine = cuisine
 
+        # Información básica
+        recipe._id = data["id"]
+        recipe._name = data["name"]
+        recipe._author_id = data["author_id"]
+        recipe._description = data["description"]
+        recipe._difficulty = data["difficulty"]
+        recipe._cuisine = data["cuisine"]
+
+        # Value Objects compuestos
         recipe._collections = RecipeCollections.reconstruct(
-            ingredients, steps, tags, meal_types
+            ingredients=data["ingredients"],
+            steps=data["steps"],
+            tags=data["tags"],
+            meal_types=data["meal_types"],
         )
+
         recipe._metadata = RecipeMetadata.reconstruct(
-            cooking_time, nutritional_info, serving_info
+            cooking_time=data["cooking_time"],
+            nutritional_info=data["nutritional_info"],
+            serving_info=data["serving_info"],
         )
+
         recipe._tracking_info = RecipeTrackingInfo.reconstruct(
-            rating_sum, rating_count, view_count, favorite_count, version
+            rating_sum=data["rating_sum"],
+            rating_count=data["rating_count"],
+            view_count=data["view_count"],
+            favorite_count=data["favorite_count"],
+            version=data["version"],
         )
-        recipe._timestamps = TimeStamps.reconstruct(created_at, updated_at, deleted_at)
+
+        recipe._timestamps = TimeStamps.reconstruct(
+            created_at=data["created_at"],
+            updated_at=data["updated_at"],
+            deleted_at=data["deleted_at"],
+        )
 
         logger.debug(f"Recipe reconstructed: {recipe.id} (v{recipe.version})")
         return recipe
-
-    @property
-    def id(self) -> RecipeId:
-        return self._id
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def author_id(self) -> Optional[UserId]:
-        return self._author_id
-
-    @property
-    def description(self) -> Optional[str]:
-        return self._description
-
-    @property
-    def difficulty(self) -> Optional[DifficultyLevel]:
-        return self._difficulty
-
-    @property
-    def cuisine(self) -> Optional[CuisineType]:
-        return self._cuisine
-
-    @property
-    def ingredients(self) -> List[Ingredient]:
-        return self._collections.ingredients
-
-    @property
-    def steps(self) -> List[Step]:
-        return self._collections.steps
-
-    @property
-    def tags(self) -> Set[Tag]:
-        return self._collections.tags
-
-    @property
-    def meal_types(self) -> Set[MealType]:
-        return self._collections.meal_types
-
-    @property
-    def serving_info(self) -> Optional[ServingInfo]:
-        return self._metadata.serving_info
-
-    @property
-    def cooking_time(self) -> Optional[CookingTime]:
-        return self._metadata.cooking_time
-
-    @property
-    def nutritional_info(self) -> Optional[NutritionalInfo]:
-        return self._metadata.nutritional_info
-
-    @property
-    def average_rating(self) -> Optional[float]:
-        return self._tracking_info.calculate_average_rating()
-
-    @property
-    def rating_sum(self) -> int:
-        return self._tracking_info._rating_sum
-
-    @property
-    def rating_count(self) -> int:
-        return self._tracking_info.rating_count
-
-    @property
-    def view_count(self) -> int:
-        return self._tracking_info.view_count
-
-    @property
-    def favorite_count(self) -> int:
-        return self._tracking_info.favorite_count
-
-    @property
-    def version(self) -> int:
-        return self._tracking_info.version
-
-    @property
-    def created_at(self) -> datetime:
-        return self._timestamps.created_at
-
-    @property
-    def updated_at(self) -> datetime:
-        return self._timestamps.updated_at
-
-    @property
-    def deleted_at(self) -> Optional[datetime]:
-        return self._timestamps.deleted_at
-
-    @property
-    def is_deleted(self) -> bool:
-        return self._timestamps.is_deleted()
 
     def _check_not_deleted(self) -> None:
         """Verificar que la receta no esté eliminada."""
@@ -284,22 +179,6 @@ class Recipe:
         self._record_update()
         logger.info(f"Recipe {self.id} restored")
 
-    def set_name(self, name: str) -> None:
-        """Establecer nombre de la receta."""
-        self._check_not_deleted()
-
-        if not name or not name.strip():
-            raise RecipeValidationException("Recipe name cannot be empty", "EMPTY_NAME")
-
-        if len(name.strip()) > 200:
-            raise RecipeValidationException(
-                "Recipe name cannot exceed 200 characters", "NAME_TOO_LONG"
-            )
-
-        self._name = name.strip()
-        self._record_update()
-        logger.debug(f"Recipe {self.id} name updated to '{self.name}'")
-
     def update_basic_info(
         self,
         name: Optional[str] = None,
@@ -309,29 +188,43 @@ class Recipe:
     ) -> None:
         """Actualizar información básica de la receta."""
         self._check_not_deleted()
+        changed = False
 
         if name is not None:
-            self.set_name(name)
+            if not name or not name.strip():
+                raise RecipeValidationException(
+                    "Recipe name cannot be empty", "EMPTY_NAME"
+                )
+            if len(name.strip()) > 200:
+                raise RecipeValidationException(
+                    "Recipe name cannot exceed 200 characters", "NAME_TOO_LONG"
+                )
+            self._name = name.strip()
+            changed = True
+            logger.debug(f"Recipe {self.id} name updated to '{self.name}'")
 
         if description is not None:
             self._description = description.strip()
-            self._record_update()
+            changed = True
             logger.debug(f"Recipe {self.id} description updated")
 
         if difficulty is not None:
             self._difficulty = difficulty
-            self._record_update()
+            changed = True
             logger.debug(f"Recipe {self.id} difficulty updated to {self.difficulty}")
 
         if cuisine is not None:
             self._cuisine = cuisine
-            self._record_update()
+            changed = True
             logger.debug(f"Recipe {self.id} cuisine updated to {self.cuisine}")
+
+        if changed:
+            self._record_update()
 
     def add_ingredient(self, ingredient: Ingredient) -> None:
         """Agregar ingrediente a la receta."""
         self._check_not_deleted()
-        self._collections = self._collections.add_ingredient(ingredient, self.id)
+        self._collections = self._collections.add_ingredient(ingredient)
         self._record_update()
         logger.debug(f"Ingredient {ingredient.name} added to recipe {self.id}")
 
@@ -339,7 +232,7 @@ class Recipe:
         """Agregar múltiples ingredientes a la receta."""
         self._check_not_deleted()
         for ingredient in ingredients:
-            self._collections = self._collections.add_ingredient(ingredient, self.id)
+            self._collections = self._collections.add_ingredient(ingredient)
         self._record_update()
         logger.debug(f"{len(ingredients)} ingredients added to recipe {self.id}")
 
@@ -347,7 +240,7 @@ class Recipe:
         """Actualizar lista completa de ingredientes."""
         self._check_not_deleted()
 
-        self._collections.clear_ingredients()
+        self.clear_ingredients()
         self.add_ingredients(ingredients)
 
         self._record_update()
@@ -550,7 +443,6 @@ class Recipe:
     def increment_view_count(self) -> None:
         """Incrementar contador de vistas."""
         self._tracking_info = self._tracking_info.increment_view_count()
-        # No llamar _record_update() para evitar spam de versiones
         logger.debug(f"View count incremented for recipe {self.id}")
 
     def increment_favorite_count(self) -> None:
@@ -559,6 +451,102 @@ class Recipe:
         self._tracking_info = self._tracking_info.increment_favorite_count()
         self._record_update()
         logger.debug(f"Favorite count incremented for recipe {self.id}")
+
+    @property
+    def id(self) -> RecipeId:
+        return self._id
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def author_id(self) -> UserId:
+        return self._author_id
+
+    @property
+    def description(self) -> Optional[str]:
+        return self._description
+
+    @property
+    def image_url(self) -> Optional[str]:
+        return self._image_url
+
+    @property
+    def difficulty(self) -> DifficultyLevel:
+        return self._difficulty
+
+    @property
+    def cuisine(self) -> CuisineType:
+        return self._cuisine
+
+    @property
+    def ingredients(self) -> List[Ingredient]:
+        return self._collections.ingredients
+
+    @property
+    def steps(self) -> List[Step]:
+        return self._collections.steps
+
+    @property
+    def tags(self) -> Set[Tag]:
+        return self._collections.tags
+
+    @property
+    def meal_types(self) -> Set[MealType]:
+        return self._collections.meal_types
+
+    @property
+    def serving_info(self) -> Optional[ServingInfo]:
+        return self._metadata.serving_info
+
+    @property
+    def cooking_time(self) -> Optional[CookingTime]:
+        return self._metadata.cooking_time
+
+    @property
+    def nutritional_info(self) -> Optional[NutritionalInfo]:
+        return self._metadata.nutritional_info
+
+    @property
+    def average_rating(self) -> Optional[float]:
+        return self._tracking_info.calculate_average_rating()
+
+    @property
+    def rating_sum(self) -> int:
+        return self._tracking_info._rating_sum
+
+    @property
+    def rating_count(self) -> int:
+        return self._tracking_info.rating_count
+
+    @property
+    def view_count(self) -> int:
+        return self._tracking_info.view_count
+
+    @property
+    def favorite_count(self) -> int:
+        return self._tracking_info.favorite_count
+
+    @property
+    def version(self) -> int:
+        return self._tracking_info.version
+
+    @property
+    def created_at(self) -> datetime:
+        return self._timestamps.created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._timestamps.updated_at
+
+    @property
+    def deleted_at(self) -> Optional[datetime]:
+        return self._timestamps.deleted_at
+
+    @property
+    def is_deleted(self) -> bool:
+        return self._timestamps.is_deleted()
 
     def __repr__(self) -> str:
         return f"Recipe(id={self.id}, name='{self.name}', author={self.author_id}, version={self.version})"

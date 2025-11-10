@@ -38,6 +38,11 @@ class UserId:
         except (ValueError, TypeError):
             raise ValueError(f"Cannot create UserId from string: {value}")
 
+    @classmethod
+    def zero(cls) -> "UserId":
+        """Return a zero UserId"""
+        return cls(0)
+
 
 class UserRole(Enum):
     """Enum representing user roles in the system."""

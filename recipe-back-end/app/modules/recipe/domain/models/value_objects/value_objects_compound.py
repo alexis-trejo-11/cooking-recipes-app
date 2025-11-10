@@ -46,8 +46,11 @@ class TimeStamps:
         if self._created_at > now:
             raise ValueError("Creation date cannot be in the future")
 
-        if self._updated_at < self._created_at:
-            raise ValueError("Update date cannot be before creation date")
+        time_diff = (self._created_at - self._updated_at).total_seconds()
+        if time_diff > 1:
+            raise ValueError(
+                f"Update date cannot be before creation date (diff: {time_diff}s)"
+            )
 
         if self._deleted_at and self._deleted_at < self._created_at:
             raise ValueError("Deletion date cannot be before creation date")
@@ -138,26 +141,38 @@ class RecipeCollections:
         self._tags = tags or set()
         self._meal_types = meal_types or set()
 
-    def add_ingredient(
-        self, ingredient: "Ingredient", recipe_id: "RecipeId"
-    ) -> "RecipeCollections":
+    def add_ingredient(self, ingredient: "Ingredient") -> "RecipeCollections":
         """Agregar ingrediente."""
-        if any(i.id == ingredient.id for i in self._ingredients):
+        if any(i.name.lower() == ingredient.name.lower() for i in self._ingredients):
             raise ValueError(
-                f"Ingredient {ingredient.name} already exists in recipe {recipe_id}"
+                f"Ingredient with name '{ingredient.name}' already exists in recipe"
             )
 
-        new_ingredients = self._ingredients + [ingredient]
-        return RecipeCollections(
-            ingredients=new_ingredients,
-            steps=self._steps,
-            tags=self._tags,
-            meal_types=self._meal_types,
+        new_ingredients = self._ingredients.copy()
+        new_ingredients.append(ingredient)
+
+        return RecipeCollections.reconstruct(
+            new_ingredients, self._steps, self._tags, self._meal_types
+        )
+
+    def add_ingredients(self, ingredients: List["Ingredient"]) -> "RecipeCollections":
+        """Agregar múltiples ingredientes."""
+        new_ingredients = self._ingredients.copy()
+
+        for ingredient in ingredients:
+            if any(i.name.lower() == ingredient.name.lower() for i in new_ingredients):
+                raise ValueError(
+                    f"Ingredient with name '{ingredient.name}' already exists in recipe"
+                )
+            new_ingredients.append(ingredient)
+
+        return RecipeCollections.reconstruct(
+            new_ingredients, self._steps, self._tags, self._meal_types
         )
 
     def clear_ingredients(self) -> "RecipeCollections":
         """Remover todos los ingredientes."""
-        return RecipeCollections(
+        return RecipeCollections.reconstruct(
             ingredients=[],
             steps=self._steps,
             tags=self._tags,
@@ -167,7 +182,7 @@ class RecipeCollections:
     def remove_ingredient(self, ingredient_id: IngredientId) -> "RecipeCollections":
         """Remover ingrediente."""
         new_ingredients = [i for i in self._ingredients if i.id != ingredient_id]
-        return RecipeCollections(
+        return RecipeCollections.reconstruct(
             ingredients=new_ingredients,
             steps=self._steps,
             tags=self._tags,
@@ -181,7 +196,23 @@ class RecipeCollections:
             raise ValueError(f"Step number {step.number} already exists")
 
         new_steps = self._steps + [step]
-        return RecipeCollections(
+        return RecipeCollections.reconstruct(
+            ingredients=self._ingredients,
+            steps=new_steps,
+            tags=self._tags,
+            meal_types=self._meal_types,
+        )
+
+    def add_steps(self, steps: List[Step]) -> "RecipeCollections":
+        """Agregar múltiples pasos."""
+        new_steps = self._steps.copy()
+
+        for step in steps:
+            if any(s.number == step.number for s in new_steps):
+                raise ValueError(f"Step number {step.number} already exists")
+            new_steps.append(step)
+
+        return RecipeCollections.reconstruct(
             ingredients=self._ingredients,
             steps=new_steps,
             tags=self._tags,
@@ -190,7 +221,7 @@ class RecipeCollections:
 
     def clear_steps(self) -> "RecipeCollections":
         """Remover todos los pasos."""
-        return RecipeCollections(
+        return RecipeCollections.reconstruct(
             ingredients=self._ingredients,
             steps=[],
             tags=self._tags,
@@ -200,7 +231,17 @@ class RecipeCollections:
     def add_tag(self, tag: Tag) -> "RecipeCollections":
         """Agregar etiqueta."""
         new_tags = self._tags | {tag}
-        return RecipeCollections(
+        return RecipeCollections.reconstruct(
+            ingredients=self._ingredients,
+            steps=self._steps,
+            tags=new_tags,
+            meal_types=self._meal_types,
+        )
+
+    def add_tags(self, tags: Set[Tag]) -> "RecipeCollections":
+        """Agregar múltiples etiquetas."""
+        new_tags = self._tags | tags
+        return RecipeCollections.reconstruct(
             ingredients=self._ingredients,
             steps=self._steps,
             tags=new_tags,
@@ -210,7 +251,7 @@ class RecipeCollections:
     def add_meal_types(self, meal_types: Set[MealType]) -> "RecipeCollections":
         """Agregar tipos de comida."""
         new_meal_types = self._meal_types | meal_types
-        return RecipeCollections(
+        return RecipeCollections.reconstruct(
             ingredients=self._ingredients,
             steps=self._steps,
             tags=self._tags,
@@ -219,7 +260,7 @@ class RecipeCollections:
 
     def clear_meal_types(self) -> "RecipeCollections":
         """Remover todos los tipos de comida."""
-        return RecipeCollections(
+        return RecipeCollections.reconstruct(
             ingredients=self._ingredients,
             steps=self._steps,
             tags=self._tags,
@@ -229,7 +270,7 @@ class RecipeCollections:
     def add_meal_type(self, meal_type: MealType) -> "RecipeCollections":
         """Agregar tipo de comida."""
         new_meal_types = self._meal_types | {meal_type}
-        return RecipeCollections(
+        return RecipeCollections.reconstruct(
             ingredients=self._ingredients,
             steps=self._steps,
             tags=self._tags,
@@ -238,7 +279,7 @@ class RecipeCollections:
 
     def clear_tags(self) -> "RecipeCollections":
         """Remover todas las etiquetas."""
-        return RecipeCollections(
+        return RecipeCollections.reconstruct(
             ingredients=self._ingredients,
             steps=self._steps,
             tags=set(),

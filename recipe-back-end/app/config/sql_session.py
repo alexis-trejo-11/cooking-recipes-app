@@ -37,7 +37,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 async def init_db():
     """Initialize database (create tables)"""
     async with engine.begin() as conn:
-        from app.infrastructure.persistence.models.models import Base
+        from app.config.sql_session import Base
 
         await conn.run_sync(Base.metadata.create_all)
 

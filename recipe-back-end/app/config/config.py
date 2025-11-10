@@ -1,4 +1,6 @@
 from pydantic_settings import BaseSettings
+from fastapi import FastAPI
+from app.config.global_exception_handler import GlobalExceptionHandler
 
 
 class Settings(BaseSettings):
@@ -17,3 +19,24 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def create_application() -> FastAPI:
+    """Factory function para crear la aplicación FastAPI"""
+
+    app = FastAPI(
+        title="Cooking Recipes API",
+        description="An API to manage and retrieve cooking recipes.",
+        version="1.0.0",
+    )
+
+    _configure_exception_handlers(app)
+
+    return app
+
+
+def _configure_exception_handlers(app: FastAPI):
+    """Configurar todos los handlers de excepciones"""
+
+    # Handler global
+    GlobalExceptionHandler(app, debug=app.debug)
