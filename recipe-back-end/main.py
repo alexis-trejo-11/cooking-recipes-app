@@ -4,7 +4,10 @@ from app.config.sql_session import init_db, close_db
 import uvicorn
 from app.modules.auth.presentation.auth_controller import router as auth_router
 from app.modules.recipe.presentation.controller import router as recipe_router
-from app.config.config import create_application
+from app.config.app_settings import create_application
+from app.config.logging_config import setup_logging
+
+setup_logging()
 
 app = create_application()
 
@@ -26,4 +29,4 @@ app.include_router(recipe_router)
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True, log_config=None)

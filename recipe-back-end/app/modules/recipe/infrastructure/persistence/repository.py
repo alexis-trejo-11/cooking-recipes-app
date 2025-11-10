@@ -27,7 +27,7 @@ from app.modules.recipe.application.exceptions import RecipeNotFoundException
 import logging
 from .mapper import RecipeMapper
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app.modules.recipe")
 
 
 class SQLAlchemyRecipeRepository(RecipeRepository):

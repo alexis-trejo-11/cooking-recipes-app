@@ -15,7 +15,7 @@ from ..value_objects.value_objects_compound import (
 from .ingredient import Ingredient
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app.modules.recipe")
 
 
 class Recipe:

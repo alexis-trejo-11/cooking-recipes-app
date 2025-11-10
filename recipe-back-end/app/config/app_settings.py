@@ -28,6 +28,7 @@ def create_application() -> FastAPI:
         title="Cooking Recipes API",
         description="An API to manage and retrieve cooking recipes.",
         version="1.0.0",
+        debug=settings.DEBUG,
     )
 
     _configure_exception_handlers(app)

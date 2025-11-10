@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 from decimal import Decimal
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app.modules.recipe")
 
 
 @dataclass(frozen=True)

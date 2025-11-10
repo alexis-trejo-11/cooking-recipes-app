@@ -37,7 +37,7 @@ from .base import (
     RestoreRecipeUseCase,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app.modules.recipe")
 
 
 class CreateRecipeUseCaseImpl(CreateRecipeUseCase):
@@ -50,11 +50,18 @@ class CreateRecipeUseCaseImpl(CreateRecipeUseCase):
     async def execute(
         self, request: CreateRecipeRequest, author_id: UserId
     ) -> RecipeCreatedResponse:
+        logger.info(f"Creating recipe '{request.name}' for author ID {author_id}")
+
         await self._validate_author(request.name, author_id)
+        logger.info(f"Author ID {author_id} validated successfully")
 
         recipe = self.create_recipe(request, author_id)
+        logger.info(f"Recipe '{request.name}' created successfully")
+
+        logger.info(f"Saving recipe '{request.name}' to repository")
         saved_recipe = await self.recipe_repository.save(recipe)
 
+        logger.info(f"Recipe '{request.name}' saved with ID {saved_recipe.id}")
         return RecipeCreatedResponse(id=saved_recipe.id.value, name=saved_recipe.name)
 
     def create_recipe(self, request: CreateRecipeRequest, author_id: UserId) -> Recipe:

@@ -21,6 +21,7 @@ python-multipart==0.0.6
 PyJWT[cryptography]==2.8.0
 bcrypt==4.1.2
 python-dotenv==1.0.0
+colorlog
 
 # Development and Testing
 pytest==7.4.3

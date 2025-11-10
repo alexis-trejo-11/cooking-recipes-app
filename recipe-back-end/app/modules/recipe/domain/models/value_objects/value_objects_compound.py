@@ -15,7 +15,7 @@ from ..entities.ingredient import Ingredient, IngredientId
 from ..entities.recipe import RecipeId
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app.modules.recipe")
 
 
 class TimeStamps:
