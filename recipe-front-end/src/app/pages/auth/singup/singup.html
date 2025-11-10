@@ -1,1 +1,151 @@
-<p>singup works!</p>
+<div class="signup-container">
+  <div class="signup-content">
+    <div class="signup-card">
+      <div class="signup-header">
+        <div class="logo-container">
+          <svg class="logo-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+            />
+          </svg>
+        </div>
+        <h1 class="signup-title">Create Account</h1>
+        <p class="signup-subtitle">Join RecipeBook and start cooking</p>
+      </div>
+
+      @if (error()) {
+      <div class="error-message">
+        <p class="error-text">{{ error() }}</p>
+      </div>
+      }
+
+      <form (ngSubmit)="handleSignup()" #signupForm="ngForm">
+        <div class="form-fields">
+          <!-- First Name and Last Name in Row -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">First Name *</label>
+              <input
+                type="text"
+                [(ngModel)]="userData.firstname"
+                name="firstname"
+                required
+                class="form-input"
+                placeholder="John"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Last Name *</label>
+              <input
+                type="text"
+                [(ngModel)]="userData.lastname"
+                name="lastname"
+                required
+                class="form-input"
+                placeholder="Doe"
+              />
+            </div>
+          </div>
+
+          <!-- Email Field -->
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input
+              type="email"
+              [(ngModel)]="userData.email"
+              name="email"
+              required
+              email
+              class="form-input"
+              placeholder="your@email.com"
+            />
+          </div>
+
+          <!-- Phone Number Field -->
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input
+              type="tel"
+              [(ngModel)]="userData.phoneNumber"
+              name="phoneNumber"
+              class="form-input"
+              placeholder="+1 (555) 123-4567"
+            />
+          </div>
+
+          <!-- Gender and Date of Birth in Row -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Gender</label>
+              <select [(ngModel)]="userData.gender" name="gender" class="form-select">
+                @for (option of genderOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Date of Birth</label>
+              <input
+                type="date"
+                [(ngModel)]="userData.dateOfBirth"
+                name="dateOfBirth"
+                [max]="getMaxBirthDateAllowed()"
+                [min]="getMinBirthDateAllowed()"
+                class="form-input"
+              />
+            </div>
+          </div>
+
+          <!-- Password Fields -->
+          <div class="form-group">
+            <label class="form-label">Password *</label>
+            <input
+              type="password"
+              [(ngModel)]="userData.password"
+              name="password"
+              required
+              minlength="6"
+              class="form-input"
+              placeholder="••••••••"
+            />
+            <p class="input-help">Minimum 6 characters</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Confirm Password *</label>
+            <input
+              type="password"
+              [(ngModel)]="confirmPassword"
+              name="confirmPassword"
+              required
+              class="form-input"
+              placeholder="••••••••"
+              [class.input-error]="confirmPassword && userData.password !== confirmPassword"
+            />
+            @if (confirmPassword && userData.password !== confirmPassword) {
+            <p class="input-error-text">Passwords do not match</p>
+            }
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          [disabled]="!signupForm.valid || loading() || userData.password !== confirmPassword"
+          class="signup-button"
+        >
+          {{ loading() ? 'Creating account...' : 'Sign Up' }}
+        </button>
+
+        <p class="login-link">
+          Already have an account?
+          <a routerLink="/login" class="login-text"> Sign In </a>
+        </p>
+      </form>
+    </div>
+  </div>
+</div>

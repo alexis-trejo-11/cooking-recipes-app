@@ -1,8 +1,9 @@
 import { Routes } from '@angular/router';
 import { Home } from './pages/home/home';
 import { Recipes } from './pages/recipe/recipes/recipes';
-import { RecipeCard } from './shared/recipe-card/recipe-card';
 import { RecipeDetail } from './pages/recipe/recipe-detail/recipe-detail';
+import { Login } from './pages/auth/login/login';
+import { Singup } from './pages/auth/singup/singup';
 
 export const routes: Routes = [
   {
@@ -14,8 +15,12 @@ export const routes: Routes = [
     component: Recipes,
   },
   {
-    path: 'recipe-card',
-    component: RecipeCard,
+    path: 'login',
+    component: Login,
+  },
+  {
+    path: 'signup',
+    component: Singup,
   },
   {
     path: 'recipes/:id',
