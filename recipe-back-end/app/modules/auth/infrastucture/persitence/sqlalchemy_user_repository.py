@@ -15,7 +15,6 @@ class SQLAlchemyUserRepository(UserRepository):
         self.session = session
 
     async def get_by_id(self, user_id: UserId) -> Optional[User]:
-        """Get user by ID"""
         stmt = select(UserModel).where(UserModel.id == user_id.value)
         result = await self.session.execute(stmt)
         user_model = result.scalar_one_or_none()
@@ -26,7 +25,6 @@ class SQLAlchemyUserRepository(UserRepository):
         return self._to_entity(user_model)
 
     async def get_by_email(self, email: str) -> Optional[User]:
-        """Get user by email"""
         stmt = select(UserModel).where(UserModel.email == email)
         result = await self.session.execute(stmt)
         user_model = result.scalar_one_or_none()
@@ -66,7 +64,6 @@ class SQLAlchemyUserRepository(UserRepository):
         return user
 
     async def _update(self, user: User) -> User:
-        """Update existing user"""
         stmt = (
             update(UserModel)
             .where(UserModel.id == user.user_id.value)

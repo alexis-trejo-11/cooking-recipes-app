@@ -39,79 +39,75 @@ logger = logging.getLogger("app.modules.recipe")
 
 class RecipeMapper:
     """
-    Mapper simplificado que se enfoca en transformar datos,
-    no en cargar relaciones.
+    Translates between domain entities and persistence models.
+
+    This mapper assumes that all relationships are eagerly loaded
+    before calling model_to_entity().
     """
 
     @staticmethod
-    def model_to_entity(recipe_model: RecipeModel) -> Recipe:
+    def model_to_entity(
+        recipe_model: RecipeModel,
+        rating_sum: Optional[int] = None,
+        rating_count: Optional[int] = None,
+        view_count: Optional[int] = None,
+        favorite_count: Optional[int] = None,
+    ) -> Recipe:
         """
-        Convierte SQLAlchemy model a Recipe entity.
-
-        IMPORTANTE: Asume que recipe_model ya tiene las relaciones cargadas.
+        Convert SQLAlchemy model to domain entity.
 
         Args:
-            recipe_model: Modelo con relaciones cargadas (ingredients, steps, etc)
+            recipe_model: Model with eagerly loaded relationships
+            rating_sum: Override rating sum (optional)
+            rating_count: Override rating count (optional)
+            view_count: Override view count (optional)
+            favorite_count: Override favorite count (optional)
 
         Returns:
-            Recipe: Entidad de dominio
+            Recipe domain entity
 
         Raises:
-            ValueError: Si faltan relaciones requeridas
+            ValueError: If required relationships are not loaded
         """
-        try:
-            # Validar que las relaciones estén cargadas
-            if not hasattr(recipe_model, "ingredients"):
-                raise ValueError("Recipe model must have ingredients loaded")
+        if not hasattr(recipe_model, "ingredients"):
+            raise ValueError("Recipe model must have ingredients relationship loaded")
 
-            # Preparar datos para reconstruct
-            data = RecipeReconstructData(
-                id=RecipeId(recipe_model.id),
-                name=recipe_model.name,
-                author_id=UserId(recipe_model.author_id),
-                description=recipe_model.description or "",
-                difficulty=DifficultyLevel(recipe_model.difficulty),
-                cuisine=CuisineType(recipe_model.cuisine),
-                # Mapear colecciones
-                ingredients=RecipeMapper._map_ingredients(recipe_model.ingredients),
-                steps=RecipeMapper._map_steps(recipe_model.steps),
-                tags=RecipeMapper._map_tags(recipe_model.tags),
-                meal_types=RecipeMapper._map_meal_types(recipe_model.meal_types),
-                # Mapear metadata
-                serving_info=RecipeMapper._map_serving_info(recipe_model),
-                cooking_time=RecipeMapper._map_cooking_time(recipe_model),
-                nutritional_info=RecipeMapper._map_nutritional_info(recipe_model),
-                # Tracking info
-                rating_sum=recipe_model.rating_sum or 0,
-                rating_count=recipe_model.rating_count or 0,
-                view_count=recipe_model.view_count or 0,
-                favorite_count=recipe_model.favorite_count or 0,
-                version=recipe_model.version or 1,
-                # Timestamps
-                created_at=recipe_model.created_at,
-                updated_at=recipe_model.updated_at,
-                deleted_at=recipe_model.deleted_at,
-            )
+        data = RecipeReconstructData(
+            id=RecipeId(recipe_model.id),
+            name=recipe_model.name,
+            author_id=UserId(recipe_model.author_id),
+            description=recipe_model.description or "",
+            difficulty=DifficultyLevel(recipe_model.difficulty),
+            cuisine=CuisineType(recipe_model.cuisine),
+            ingredients=RecipeMapper._map_ingredients(recipe_model.ingredients),
+            steps=RecipeMapper._map_steps(recipe_model.steps),
+            tags=RecipeMapper._map_tags(recipe_model.tags),
+            meal_types=RecipeMapper._map_meal_types(recipe_model.meal_types),
+            serving_info=RecipeMapper._map_serving_info(recipe_model),
+            cooking_time=RecipeMapper._map_cooking_time(recipe_model),
+            nutritional_info=RecipeMapper._map_nutritional_info(recipe_model),
+            rating_sum=rating_sum or 0,
+            rating_count=rating_count or 0,
+            view_count=view_count or 0,
+            favorite_count=favorite_count or 0,
+            version=recipe_model.version or 1,
+            created_at=recipe_model.created_at,
+            updated_at=recipe_model.updated_at,
+            deleted_at=recipe_model.deleted_at,
+        )
 
-            # Usar el reconstruct de Recipe
-            return Recipe.reconstruct(data)
-
-        except Exception as e:
-            logger.error(
-                f"Error mapping recipe model {recipe_model.id}: {e}", exc_info=True
-            )
-            raise
+        return Recipe.reconstruct(data)
 
     @staticmethod
     def entity_to_dict(recipe: Recipe) -> dict:
         """
-        Convierte Recipe entity a diccionario para persistencia.
+        Convert domain entity to dictionary for persistence.
 
         Args:
-            recipe: Entidad de dominio
+            recipe: Domain entity
 
         Returns:
-            dict: Datos para crear/actualizar modelo de SQLAlchemy
+            Dictionary with model fields
         """
         return {
             "name": recipe.name,
@@ -119,12 +115,10 @@ class RecipeMapper:
             "description": recipe.description,
             "difficulty": recipe.difficulty.value,
             "cuisine": recipe.cuisine.value,
-            # Serving info
             "servings": recipe.serving_info.servings if recipe.serving_info else None,
             "serving_size": (
                 recipe.serving_info.serving_size if recipe.serving_info else None
             ),
-            # Cooking time
             "prep_time_minutes": (
                 recipe.cooking_time.prep_minutes if recipe.cooking_time else None
             ),
@@ -134,7 +128,6 @@ class RecipeMapper:
             "rest_time_minutes": (
                 recipe.cooking_time.rest_minutes if recipe.cooking_time else None
             ),
-            # Nutritional info (opcional)
             "calories": (
                 recipe.nutritional_info.calories if recipe.nutritional_info else None
             ),
@@ -153,13 +146,11 @@ class RecipeMapper:
                 if recipe.nutritional_info and recipe.nutritional_info.fat_g
                 else None
             ),
-            # Tracking
             "rating_sum": recipe.rating_sum,
             "rating_count": recipe.rating_count,
             "view_count": recipe.view_count,
             "favorite_count": recipe.favorite_count,
             "version": recipe.version,
-            # Timestamps
             "created_at": recipe.created_at,
             "updated_at": recipe.updated_at,
             "deleted_at": recipe.deleted_at,
@@ -167,55 +158,51 @@ class RecipeMapper:
 
     @staticmethod
     def _map_ingredients(ingredient_models: List[IngredientModel]) -> List[Ingredient]:
-        """Mapea ingredientes de modelo a entidad"""
+        """Map ingredient models to domain entities."""
         if not ingredient_models:
             return []
 
         ingredients = []
-        for ing_model in ingredient_models:
+        for model in ingredient_models:
             try:
                 quantity = Quantity(
-                    value=Decimal(str(ing_model.quantity_value or 0)),
-                    unit=ing_model.quantity_unit or "units",
+                    value=Decimal(str(model.quantity_value or 0)),
+                    unit=model.quantity_unit or "units",
                 )
 
                 properties = IngredientProperties(
-                    is_vegan=ing_model.is_vegan or False,
-                    is_vegetarian=ing_model.is_vegetarian or False,
-                    is_gluten_free=ing_model.is_gluten_free or False,
-                    is_dairy_free=ing_model.is_dairy_free or False,
-                    allergens=(
-                        set(ing_model.allergens) if ing_model.allergens else set()
-                    ),
+                    is_vegan=model.is_vegan or False,
+                    is_vegetarian=model.is_vegetarian or False,
+                    is_gluten_free=model.is_gluten_free or False,
+                    is_dairy_free=model.is_dairy_free or False,
+                    allergens=set(model.allergens) if model.allergens else set(),
                 )
 
-                substitutes = RecipeMapper._parse_json_field(ing_model.substitutes)
+                substitutes = RecipeMapper._parse_json_list(model.substitutes)
 
                 ingredient = Ingredient.reconstruct(
-                    id=IngredientId(ing_model.id),
-                    name=ing_model.name,
+                    id=IngredientId(model.id),
+                    name=model.name,
                     quantity=quantity,
                     properties=properties,
-                    is_optional=ing_model.is_optional or False,
+                    is_optional=model.is_optional or False,
                     substitutes=substitutes,
                 )
 
                 ingredients.append(ingredient)
 
             except Exception as e:
-                logger.error(f"Error mapping ingredient {ing_model.id}: {e}")
-                # Continuar con los demás ingredientes
+                logger.error(f"Error mapping ingredient {model.id}: {e}")
                 continue
 
         return ingredients
 
     @staticmethod
     def _map_steps(step_models: List[StepModel]) -> List[Step]:
-        """Mapea pasos de modelo a value object"""
+        """Map step models to value objects."""
         if not step_models:
             return []
 
-        # Ordenar por step_number
         sorted_steps = sorted(step_models, key=lambda x: x.step_number)
 
         return [
@@ -230,33 +217,33 @@ class RecipeMapper:
         ]
 
     @staticmethod
-    def _map_tags(tag_models: List[TagModel]) -> Set[Tag]:
-        """Mapea tags de modelo a value object"""
+    def _map_tags(tag_models: List[TagModel]) -> set[Tag]:
+        """Map tag models to value objects."""
         if not tag_models:
             return set()
 
         return {Tag(name=tag.name, description=tag.description) for tag in tag_models}
 
     @staticmethod
-    def _map_meal_types(meal_type_models: List[RecipeMealTypeModel]) -> Set[MealType]:
-        """Mapea meal types de modelo a enum"""
+    def _map_meal_types(meal_type_models: List[RecipeMealTypeModel]) -> set[MealType]:
+        """Map meal type models to enums."""
         meal_types = set()
 
         if not meal_type_models:
             return meal_types
 
-        for mt_model in meal_type_models:
+        for model in meal_type_models:
             try:
-                meal_types.add(MealType(mt_model.meal_type))
+                meal_types.add(MealType(model.meal_type))
             except ValueError as e:
-                logger.warning(f"Invalid meal type '{mt_model.meal_type}': {e}")
+                logger.warning(f"Invalid meal type '{model.meal_type}': {e}")
                 continue
 
         return meal_types
 
     @staticmethod
     def _map_serving_info(recipe_model: RecipeModel) -> ServingInfo:
-        """Mapea serving info de modelo a value object"""
+        """Map serving info from model to value object."""
         return ServingInfo(
             servings=recipe_model.servings,
             serving_size=recipe_model.serving_size,
@@ -264,20 +251,16 @@ class RecipeMapper:
 
     @staticmethod
     def _map_cooking_time(recipe_model: RecipeModel) -> CookingTime:
-        """Mapea cooking time de modelo a value object"""
-        prep = recipe_model.prep_time_minutes or 0
-        cook = recipe_model.cook_time_minutes or 0
-        rest = recipe_model.rest_time_minutes or 0
-
+        """Map cooking time from model to value object."""
         return CookingTime(
-            prep_minutes=prep,
-            cook_minutes=cook,
-            rest_minutes=rest,
+            prep_minutes=recipe_model.prep_time_minutes or 0,
+            cook_minutes=recipe_model.cook_time_minutes or 0,
+            rest_minutes=recipe_model.rest_time_minutes or 0,
         )
 
     @staticmethod
     def _map_nutritional_info(recipe_model: RecipeModel) -> Optional[NutritionalInfo]:
-        """Mapea nutritional info de modelo a value object"""
+        """Map nutritional info from model to value object."""
         if recipe_model.calories is None:
             return None
 
@@ -293,25 +276,15 @@ class RecipeMapper:
         )
 
     @staticmethod
-    def _parse_json_field(field_data) -> List[str]:
-        """
-        Parse campos JSON que pueden venir en diferentes formatos.
-
-        Args:
-            field_data: Datos a parsear (string JSON, lista, etc)
-
-        Returns:
-            Lista de strings
-        """
+    def _parse_json_list(field_data) -> List[str]:
+        """Parse JSON fields that may come in different formats."""
         if not field_data:
             return []
 
         try:
             if isinstance(field_data, str):
-                # Si es string JSON, parsearlo
                 if field_data.startswith("["):
                     return json.loads(field_data)
-                # Si es string simple, retornar como lista
                 return [field_data]
             elif isinstance(field_data, list):
                 return field_data

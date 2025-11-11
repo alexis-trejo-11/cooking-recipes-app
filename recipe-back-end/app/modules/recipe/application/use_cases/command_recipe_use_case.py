@@ -32,8 +32,7 @@ from .base import (
     CreateRecipeUseCase,
     IncrementViewCountUseCase,
     DeleteRecipeUseCase,
-    IncreaseFavoriteUseCase,
-    DecreaseFavoriteUseCase,
+    ToggleFavoriteUseCase,
     RestoreRecipeUseCase,
 )
 
@@ -200,7 +199,44 @@ class IncrementViewCountUseCaseImpl(IncrementViewCountUseCase):
         logger.info(f"View count for Recipe {recipe_id} incremented successfully")
 
 
-# TODO: Implement ScaleRecipeUseCaseImpl
+class ToggleFavoriteUseCaseImpl(ToggleFavoriteUseCase):
+    def __init__(self, recipe_repository: RecipeRepository) -> None:
+        self.recipe_repository = recipe_repository
+
+    async def execute(self, recipe_id: RecipeId, user_id: UserId) -> None:
+        logger.info(
+            f"Executing IncreaseFavoriteUseCase for recipe_id: {recipe_id} by user_id: {user_id}"
+        )
+
+        recipe = await self.recipe_repository.find_by_id(recipe_id)
+        if not recipe:
+            raise RecipeNotFoundException(recipe_id)
+
+        recipe.increase_favorite_count()
+
+        await self.recipe_repository.save(recipe)
+        logger.info(f"Recipe {recipe_id} favorite status toggled for user {user_id}")
+
+
+class RestoreRecipeUseCaseImpl(RestoreRecipeUseCase):
+    def __init__(self, recipe_repository: RecipeRepository) -> None:
+        self.recipe_repository = recipe_repository
+
+    async def execute(self, recipe_id: RecipeId) -> None:
+        logger.info(f"Executing RestoreRecipeUseCase for recipe_id: {recipe_id}")
+
+        recipe = await self.recipe_repository.find_by_id(
+            include_deleted=True, recipe_id=recipe_id
+        )
+        if not recipe:
+            raise RecipeNotFoundException(recipe_id)
+
+        recipe.restore()
+
+        await self.recipe_repository.save(recipe)
+        logger.info(f"Recipe {recipe_id} restored")
+
+
 class DeleteRecipeUseCaseImpl(DeleteRecipeUseCase):
     def __init__(self, recipe_repository: RecipeRepository) -> None:
         self.recipe_repository = recipe_repository
@@ -236,60 +272,3 @@ class DeleteRecipeUseCaseImpl(DeleteRecipeUseCase):
         logger.info(f"Recipe found for delete: {recipe.id}")
 
         return recipe
-
-
-class IncreaseFavoriteUseCaseImpl(IncreaseFavoriteUseCase):
-    def __init__(self, recipe_repository: RecipeRepository) -> None:
-        self.recipe_repository = recipe_repository
-
-    async def execute(self, recipe_id: RecipeId, user_id: UserId) -> None:
-        logger.info(
-            f"Executing IncreaseFavoriteUseCase for recipe_id: {recipe_id} by user_id: {user_id}"
-        )
-
-        recipe = await self.recipe_repository.find_by_id(recipe_id)
-        if not recipe:
-            raise RecipeNotFoundException(recipe_id)
-
-        recipe.increase_favorite_count()
-
-        await self.recipe_repository.save(recipe)
-        logger.info(f"Recipe {recipe_id} favorite status toggled for user {user_id}")
-
-
-class DecreaseFavoriteUseCaseImpl(DecreaseFavoriteUseCase):
-    def __init__(self, recipe_repository: RecipeRepository) -> None:
-        self.recipe_repository = recipe_repository
-
-    async def execute(self, recipe_id: RecipeId, user_id: UserId) -> None:
-        logger.info(
-            f"Executing DecreaseFavoriteUseCase for recipe_id: {recipe_id} by user_id: {user_id}"
-        )
-
-        recipe = await self.recipe_repository.find_by_id(recipe_id)
-        if not recipe:
-            raise RecipeNotFoundException(recipe_id)
-
-        recipe.decrease_favorite_count()
-
-        await self.recipe_repository.save(recipe)
-        logger.info(f"Recipe {recipe_id} favorite status toggled for user {user_id}")
-
-
-class RestoreRecipeUseCaseImpl(RestoreRecipeUseCase):
-    def __init__(self, recipe_repository: RecipeRepository) -> None:
-        self.recipe_repository = recipe_repository
-
-    async def execute(self, recipe_id: RecipeId) -> None:
-        logger.info(f"Executing RestoreRecipeUseCase for recipe_id: {recipe_id}")
-
-        recipe = await self.recipe_repository.find_by_id(
-            include_deleted=True, recipe_id=recipe_id
-        )
-        if not recipe:
-            raise RecipeNotFoundException(recipe_id)
-
-        recipe.restore()
-
-        await self.recipe_repository.save(recipe)
-        logger.info(f"Recipe {recipe_id} restored")

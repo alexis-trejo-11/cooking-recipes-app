@@ -7,36 +7,6 @@ from app.modules.recipe.application.dtos import RecipeSearchRequest
 from ..dtos import *
 
 
-class CreateRecipeUseCase(ABC):
-    @abstractmethod
-    async def execute(
-        self, request: CreateRecipeRequest, author_id: UserId
-    ) -> RecipeCreatedResponse:
-        pass
-
-
-class GetRecipeUseCase(ABC):
-    @abstractmethod
-    async def execute(self, recipe_id: RecipeId) -> RecipeResponse:
-        pass
-
-
-class UpdateRecipeUseCase(ABC):
-    @abstractmethod
-    async def execute(
-        self, recipe_id: RecipeId, request: UpdateRecipeRequest, user_id: UserId
-    ) -> RecipeUpdatedResponse:
-        pass
-
-
-class DeleteRecipeUseCase(ABC):
-    @abstractmethod
-    async def execute(
-        self, recipe_id: RecipeId, author_id: UserId
-    ) -> RecipeDeletedResponse:
-        pass
-
-
 class SearchRecipesUseCase(ABC):
     @abstractmethod
     async def execute(self, request: RecipeSearchRequest) -> RecipePageResponse:
@@ -76,6 +46,48 @@ class GetUserRecipesUseCase(ABC):
         pass
 
 
+class GetRecipeUseCase(ABC):
+    @abstractmethod
+    async def execute(self, recipe_id: RecipeId) -> RecipeResponse:
+        pass
+
+
+class GetRecipeCompatibleDietsUseCase(ABC):
+    @abstractmethod
+    async def execute(self, recipe_id: RecipeId) -> List[DietType]:
+        pass
+
+
+class GetRecipeAllergensUseCase(ABC):
+    @abstractmethod
+    async def execute(self, recipe_id: RecipeId) -> List[str]:
+        pass
+
+
+class CreateRecipeUseCase(ABC):
+    @abstractmethod
+    async def execute(
+        self, request: CreateRecipeRequest, author_id: UserId
+    ) -> RecipeCreatedResponse:
+        pass
+
+
+class UpdateRecipeUseCase(ABC):
+    @abstractmethod
+    async def execute(
+        self, recipe_id: RecipeId, request: UpdateRecipeRequest, user_id: UserId
+    ) -> RecipeUpdatedResponse:
+        pass
+
+
+class DeleteRecipeUseCase(ABC):
+    @abstractmethod
+    async def execute(
+        self, recipe_id: RecipeId, author_id: UserId
+    ) -> RecipeDeletedResponse:
+        pass
+
+
 class ScaleRecipeUseCase(ABC):
     @abstractmethod
     async def execute(
@@ -95,36 +107,19 @@ class AddRatingUseCase(ABC):
 class IncrementViewCountUseCase(ABC):
     @abstractmethod
     async def execute(self, recipe_id: RecipeId) -> None:
+        """Increments the view count for a recipe."""
         pass
 
 
-class IncreaseFavoriteUseCase(ABC):
+class ToggleFavoriteUseCase(ABC):
     @abstractmethod
     async def execute(self, recipe_id: RecipeId, user_id: UserId) -> None:
-        """Increments the favorite count for a recipe."""
-        pass
-
-
-class DecreaseFavoriteUseCase(ABC):
-    @abstractmethod
-    async def execute(self, recipe_id: RecipeId, user_id: UserId) -> None:
-        """Decrements the favorite count for a recipe."""
+        """Toggles the favorite status for a recipe."""
         pass
 
 
 class RestoreRecipeUseCase(ABC):
     @abstractmethod
     async def execute(self, recipe_id: RecipeId) -> None:
-        pass
-
-
-class GetRecipeCompatibleDietsUseCase(ABC):
-    @abstractmethod
-    async def execute(self, recipe_id: RecipeId) -> List[DietType]:
-        pass
-
-
-class GetRecipeAllergensUseCase(ABC):
-    @abstractmethod
-    async def execute(self, recipe_id: RecipeId) -> List[str]:
+        """Restores a soft-deleted recipe."""
         pass

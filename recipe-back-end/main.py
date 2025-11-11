@@ -1,22 +1,32 @@
-from fastapi import FastAPI, Request, Depends, HTTPException
-from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-from app.config.sql_session import init_db, close_db
 import uvicorn
-from app.modules.auth.presentation.auth_controller import router as auth_router
-from app.modules.recipe.presentation.controller import router as recipe_router
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from app.config.sql_session import init_db, close_db
 from app.config.logging_config import setup_logging
-from app.config.rate_limiter import rate_limit, rate_limit_manager
+from app.config.rate_limiter import rate_limit_manager
 from app.config.app_settings import settings
 from app.config.global_exception_handler import (
     GlobalExceptionHandler,
     RateLimitException,
 )
+from app.modules.recipe.presentation.controller import router as recipe_router
+from app.modules.auth.presentation.auth_controller import router as auth_router
 
 
 setup_logging()
 
 app_stats = {"total_requests": 0, "blocked_requests": 0}
+
+
+origins = [
+    "http://localhost:3000",  # React dev server
+    "http://localhost:5173",  # Vite dev server
+    "http://localhost:8080",  # Vue dev server
+    "http://127.0.0.1:3000",  # React dev server
+    "http://127.0.0.1:5173",  # Vite dev server
+    "https://localhost:3000",  # React con HTTPS
+]
 
 
 @asynccontextmanager
@@ -35,11 +45,18 @@ app = FastAPI(
 )
 
 GlobalExceptionHandler(app, debug=settings.DEBUG)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 async def rate_limiter_dependency(request: Request):
     if not settings.RATE_LIMIT_ENABLED:
-        print("🔓 Rate limiting disabled")
+        print("Rate limiting disabled")
         return True
 
     endpoint = "unknown"
@@ -82,11 +99,6 @@ async def health_check():
     return {"status": "healthy"}
 
 
-app.include_router(auth_router, dependencies=[Depends(rate_limiter_dependency)])
-app.include_router(recipe_router, dependencies=[Depends(rate_limiter_dependency)])
-
-
-# Endpoints de administración (sin rate limiting)
 @app.get("/admin/rate-limit-status")
 async def rate_limit_status():
     return {
@@ -96,6 +108,9 @@ async def rate_limit_status():
         "configured_endpoints": len(rate_limit_manager.endpoint_configs),
     }
 
+
+app.include_router(auth_router, dependencies=[Depends(rate_limiter_dependency)])
+app.include_router(recipe_router, dependencies=[Depends(rate_limiter_dependency)])
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True, log_config=None)

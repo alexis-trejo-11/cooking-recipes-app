@@ -47,7 +47,7 @@ async def search_recipes(
 async def get_user_recipes(
     use_case: GetUserRecipesUseCaseDep,
     pagination: PaginationParams = Depends(get_pagination_params),
-    # current_user: User = Depends(get_current_user),
+    # logged_user: User = Depends(get_current_user),
 ) -> RecipePageResponse:
     """
     Get paginated list of recipes created by the current user.
@@ -67,7 +67,7 @@ async def get_user_recipes(
 async def create_recipe(
     request: CreateRecipeRequest,
     use_case: CreateRecipeUseCaseDep,
-    # current_user: User = Depends(get_current_user),
+    logged_user: User = Depends(get_current_user),
 ) -> RecipeCreatedResponse:
     """
     Create a new recipe.
@@ -85,9 +85,7 @@ async def create_recipe(
     - **cook_time_minutes**: Cooking time in minutes
     - **nutritional_info**: Optional nutritional information
     """
-    result = await use_case.execute(
-        request, UserId(1)
-    )  # Replace with current_user.user_id when auth is enabled
+    result = await use_case.execute(request, logged_user.user_id)
     return result
 
 
@@ -108,10 +106,9 @@ async def get_recipe(
     - **recipe_id**: Recipe identifier
     """
     await increment_views.execute(RecipeId(recipe_id))
+
     recipe = await use_case.execute(RecipeId(recipe_id))
     return recipe
-
-    result = await use_case.execute(RecipeId(recipe_id), UserId(1))
 
 
 @router.put(
@@ -124,7 +121,7 @@ async def update_recipe(
     request: UpdateRecipeRequest,
     use_case: UpdateRecipeUseCaseDep,
     recipe_id: int = Path(..., gt=0, description="Recipe ID"),
-    # current_user: User = Depends(get_current_user),
+    logged_user: User = Depends(get_current_user),
 ) -> RecipeUpdatedResponse:
     """
     Update an existing recipe.
@@ -151,7 +148,7 @@ async def add_rating(
     request: AddRatingRequest,
     use_case: AddRatingUseCaseDep,
     recipe_id: int = Path(..., gt=0, description="Recipe ID"),
-    current_user: User = Depends(get_current_user),
+    logged_user: User = Depends(get_current_user),
 ) -> RatingAddedResponse:
     """
     Add a rating to a recipe.
@@ -159,51 +156,29 @@ async def add_rating(
     - **recipe_id**: Recipe identifier
     - **rating**: Rating value (1-5)
     """
-    return await use_case.execute(RecipeId(recipe_id), request, current_user.user_id)
+    return await use_case.execute(RecipeId(recipe_id), request, logged_user.user_id)
 
 
 @router.patch(
-    "/{recipe_id}/favorites/increase",
-    summary="Increase Favorite",
-    description="Add recipe to favorites",
+    "/{recipe_id}/favorites/toggle",
+    summary="Toggle Favorite",
+    description="Add or remove recipe from favorites",
 )
-async def increase_favorite(
-    use_case: IncreaseFavoriteUseCaseDep,
+async def toggle_favorite(
+    use_case: ToggleFavoriteUseCaseDep,
     recipe_id: int = Path(..., gt=0, description="Recipe ID"),
-    current_user: User = Depends(get_current_user),
+    logged_user: User = Depends(get_current_user),
 ):
     """
     Add recipe to user's favorites.
 
     - **recipe_id**: Recipe identifier
     """
-    added = await use_case.execute(RecipeId(recipe_id), current_user.user_id)
+    added = await use_case.execute(RecipeId(recipe_id), logged_user.user_id)
     if added:
         return {"message": "Recipe added to favorites"}
 
     return {"message": "Recipe removed from favorites"}
-
-
-@router.patch(
-    "/{recipe_id}/favorites/decrease",
-    summary="Decrease Favorite",
-    description="Remove recipe from favorites",
-)
-async def decrease_favorite(
-    use_case: DecreaseFavoriteUseCaseDep,
-    recipe_id: int = Path(..., gt=0, description="Recipe ID"),
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Remove recipe from user's favorites.
-
-    - **recipe_id**: Recipe identifier
-    """
-    removed = await use_case.execute(RecipeId(recipe_id), current_user.user_id)
-    if removed:
-        return {"message": "Recipe removed from favorites"}
-
-    return {"message": "Recipe was not in favorites"}
 
 
 @router.post(
@@ -215,7 +190,7 @@ async def decrease_favorite(
 async def restore_recipe(
     use_case: RestoreRecipeUseCaseDep,
     recipe_id: int = Path(..., gt=0, description="Recipe ID"),
-    # current_user: User = Depends(get_current_user),
+    logged_user: User = Depends(get_current_user),
 ):
     """
     Restore a soft-deleted recipe.
@@ -234,12 +209,12 @@ async def restore_recipe(
 async def delete_recipe(
     use_case: DeleteRecipeUseCaseDep,
     recipe_id: int = Path(..., gt=0, description="Recipe ID"),
-    # current_user: User = Depends(get_current_user),
+    logged_user: User = Depends(get_current_user),
 ) -> RecipeDeletedResponse:
     """
     Delete a recipe (soft delete).
 
     - **recipe_id**: Recipe identifier
     """
-    result = await use_case.execute(RecipeId(recipe_id), UserId(1))
+    result = await use_case.execute(RecipeId(recipe_id), logged_user.user_id)
     return result

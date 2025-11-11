@@ -2,7 +2,6 @@ from fastapi import Query
 from fastapi import Depends
 from typing import Optional
 from app.config.sql_session import get_db_session
-from app.config.app_settings import settings
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator, Annotated
 from app.modules.recipe.infrastructure.persistence.repository import (
@@ -16,9 +15,8 @@ from app.modules.recipe.application.use_cases.base import (
     SearchRecipesUseCase,
     AddRatingUseCase,
     IncrementViewCountUseCase,
+    ToggleFavoriteUseCase,
     GetUserRecipesUseCase,
-    IncreaseFavoriteUseCase,
-    DecreaseFavoriteUseCase,
     UpdateRecipeUseCase,
     DeleteRecipeUseCase,
 )
@@ -29,8 +27,7 @@ from app.modules.recipe.application.use_cases.command_recipe_use_case import (
     IncrementViewCountUseCaseImpl,
     UpdateRecipeUseCaseImpl,
     DeleteRecipeUseCaseImpl,
-    IncreaseFavoriteUseCaseImpl,
-    DecreaseFavoriteUseCaseImpl,
+    ToggleFavoriteUseCaseImpl,
     RestoreRecipeUseCaseImpl,
 )
 from app.modules.recipe.application.use_cases.query_recipe_use_case import (
@@ -104,22 +101,13 @@ async def get_update_recipe_use_case(
     return UpdateRecipeUseCaseImpl(recipe_repository)
 
 
-async def get_increase_favorite_use_case(
+async def get_toggle_favorite_use_case(
     recipe_repository: Annotated[RecipeRepository, Depends(get_recipe_repository)],
-) -> IncreaseFavoriteUseCase:
+) -> ToggleFavoriteUseCase:
     """
     Dependency for IncreaseFavoriteUseCase.
     """
-    return IncreaseFavoriteUseCaseImpl(recipe_repository)
-
-
-async def get_decrease_favorite_use_case(
-    recipe_repository: Annotated[RecipeRepository, Depends(get_recipe_repository)],
-) -> DecreaseFavoriteUseCase:
-    """
-    Dependency for DecreaseFavoriteUseCase.
-    """
-    return DecreaseFavoriteUseCaseImpl(recipe_repository)
+    return ToggleFavoriteUseCaseImpl(recipe_repository)
 
 
 async def get_delete_recipe_use_case(
@@ -233,13 +221,10 @@ DeleteRecipeUseCaseDep = Annotated[
     Depends(get_delete_recipe_use_case),
 ]
 
-IncreaseFavoriteUseCaseDep = Annotated[
-    IncreaseFavoriteUseCase, Depends(get_increase_favorite_use_case)
+ToggleFavoriteUseCaseDep = Annotated[
+    ToggleFavoriteUseCase, Depends(get_toggle_favorite_use_case)
 ]
 
-DecreaseFavoriteUseCaseDep = Annotated[
-    DecreaseFavoriteUseCase, Depends(get_decrease_favorite_use_case)
-]
 
 RestoreRecipeUseCaseDep = Annotated[
     RestoreRecipeUseCase, Depends(get_restore_recipe_use_case)

@@ -1,4 +1,3 @@
-# app/recipe/infrastructure/persistence/models.py
 from typing import List, Optional, TYPE_CHECKING
 from datetime import datetime
 from decimal import Decimal
@@ -39,6 +38,52 @@ recipe_tags = Table(
     # Índice compuesto para búsquedas bidireccionales
     Index("idx_recipe_tags_recipe_id", "recipe_id"),
     Index("idx_recipe_tags_tag_id", "tag_id"),
+)
+
+recipe_reviews = Table(
+    "recipe_reviews",
+    Base.metadata,
+    Column(
+        "recipe_id",
+        Integer,
+        ForeignKey("recipes.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    ),
+    Column(
+        "reviewed_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    ),
+    Column("rating", Integer, nullable=False),
+    Column("comment", Text, nullable=True),
+    Index("idx_recipe_reviews_recipe_id", "recipe_id"),
+    Index("idx_recipe_reviews_user_id", "user_id"),
+)
+
+recipe_favorites = Table(
+    "recipe_favorites",
+    Base.metadata,
+    Column(
+        "recipe_id",
+        Integer,
+        ForeignKey("recipes.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    ),
+    Column(
+        "favorited_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    ),
+    Index("idx_recipe_favorites_recipe_id", "recipe_id"),
+    Index("idx_recipe_favorites_user_id", "user_id"),
 )
 
 
@@ -91,19 +136,7 @@ class RecipeModel(Base):
     fiber_g: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(8, 2), nullable=True)
     sodium_mg: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(8, 2), nullable=True)
 
-    rating_sum: Mapped[int] = mapped_column(
-        nullable=False, default=0, index=True  # Para ordenar por rating
-    )
-
-    rating_count: Mapped[int] = mapped_column(nullable=False, default=0)
-    view_count: Mapped[int] = mapped_column(
-        nullable=False, default=0, index=True  # Para "más vistas"
-    )
-    favorite_count: Mapped[int] = mapped_column(
-        nullable=False, default=0, index=True  # Para "más favoritas"
-    )
     version: Mapped[int] = mapped_column(nullable=False, default=1)
-
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -148,13 +181,15 @@ class RecipeModel(Base):
         back_populates="recipe", cascade="all, delete-orphan", lazy="selectin"
     )
 
+    view_count: Mapped[int] = mapped_column(
+        nullable=False, default=0, index=True  # Para "más vistas"
+    )
+
     __table_args__ = (
         CheckConstraint("servings > 0", name="check_servings_positive"),
         CheckConstraint("prep_time_minutes >= 0", name="check_prep_time_non_negative"),
         CheckConstraint("cook_time_minutes >= 0", name="check_cook_time_non_negative"),
         CheckConstraint("rest_time_minutes >= 0", name="check_rest_time_non_negative"),
-        CheckConstraint("rating_sum >= 0", name="check_rating_sum_non_negative"),
-        CheckConstraint("rating_count >= 0", name="check_rating_count_non_negative"),
         CheckConstraint("view_count >= 0", name="check_view_count_non_negative"),
         CheckConstraint(
             "favorite_count >= 0", name="check_favorite_count_non_negative"
@@ -164,22 +199,10 @@ class RecipeModel(Base):
         Index("idx_recipes_author_created", "author_id", "created_at"),
         Index("idx_recipes_difficulty_cuisine", "difficulty", "cuisine"),
         Index("idx_recipes_deleted_at_created", "deleted_at", "created_at"),
-        Index(
-            "idx_recipes_rating", "rating_count", "rating_sum"
-        ),  # Para calcular avg rating
-        # Índice para búsqueda full-text (PostgreSQL)
-        # Index('idx_recipes_name_fulltext', 'name', postgresql_using='gin', postgresql_ops={'name': 'gin_trgm_ops'}),
     )
 
     def __repr__(self) -> str:
         return f"<RecipeModel(id={self.id}, name='{self.name}', author_id={self.author_id})>"
-
-    @property
-    def average_rating(self) -> Optional[float]:
-        """Calcula el rating promedio"""
-        if self.rating_count == 0:
-            return None
-        return round(self.rating_sum / self.rating_count, 2)
 
     @property
     def total_time_minutes(self) -> int:
@@ -190,6 +213,10 @@ class RecipeModel(Base):
     def is_deleted(self) -> bool:
         """Indica si la receta está eliminada (soft delete)"""
         return self.deleted_at is not None
+
+    def increment_version(self):
+        """Incrementa la versión de la receta"""
+        self.version += 1
 
 
 class IngredientModel(Base):
