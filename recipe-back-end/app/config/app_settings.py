@@ -13,31 +13,12 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRES: int = 30
     DEBUG: bool = False
 
+    RATE_LIMIT_ENABLED: bool = True
+    DEFAULT_RATE_LIMIT: str = "default"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
 
 
 settings = Settings()
-
-
-def create_application() -> FastAPI:
-    """Factory function para crear la aplicación FastAPI"""
-
-    app = FastAPI(
-        title="Cooking Recipes API",
-        description="An API to manage and retrieve cooking recipes.",
-        version="1.0.0",
-        debug=settings.DEBUG,
-    )
-
-    _configure_exception_handlers(app)
-
-    return app
-
-
-def _configure_exception_handlers(app: FastAPI):
-    """Configurar todos los handlers de excepciones"""
-
-    # Handler global
-    GlobalExceptionHandler(app, debug=app.debug)

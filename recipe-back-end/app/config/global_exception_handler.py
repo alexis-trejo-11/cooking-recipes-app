@@ -1,6 +1,6 @@
 import logging
 from typing import Any, Dict, Union
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
@@ -11,6 +11,7 @@ from app.utils.core.exceptions.base import (
     DomainException,
     ApplicationException,
     ServerException,
+    RateLimitException,
 )
 from app.utils.core.exceptions.modules import *
 
@@ -37,15 +38,77 @@ class GlobalExceptionHandler:
             ApplicationException, self.handle_application_exception
         )
 
+        # Rate limiting exception
+        self.app.add_exception_handler(
+            RateLimitException, self.handle_rate_limit_exception
+        )
+
         # FastAPI and Pydantic exceptions
         self.app.add_exception_handler(
             RequestValidationError, self.handle_validation_error
         )
         self.app.add_exception_handler(ValidationError, self.handle_validation_error)
 
+        # HTTPException general (incluye rate limiting de FastAPI)
+        self.app.add_exception_handler(HTTPException, self.handle_http_exception)
+
         # Generic exception handler (catch-all)
         self.app.add_exception_handler(Exception, self.handle_generic_exception)
 
+    async def handle_rate_limit_exception(
+        self, request: Request, exc: RateLimitException
+    ) -> JSONResponse:
+        """Handle rate limiting exceptions"""
+        log_context = self._build_log_context(request, exc)
+        logger.warning(f"Rate limit exceeded: {exc.error_code}", extra=log_context)
+
+        # Incrementar estadísticas de rate limiting si las tienes
+        if hasattr(request.app, "app_stats"):
+            request.app.app_stats["blocked_requests"] += 1
+
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": {
+                    "code": exc.error_code,
+                    "message": exc.message,
+                    "details": exc.details,
+                    "timestamp": (
+                        exc.timestamp.isoformat() if hasattr(exc, "timestamp") else None
+                    ),
+                    "error_id": exc.error_id if hasattr(exc, "error_id") else None,
+                }
+            },
+        )
+
+    async def handle_http_exception(
+        self, request: Request, exc: HTTPException
+    ) -> JSONResponse:
+        """Handle generic HTTP exceptions, including rate limiting"""
+        # Si es un error 429 (Rate Limiting) pero no es nuestra excepción personalizada
+        if exc.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+            # Convertir a nuestra excepción personalizada
+            rate_limit_exc = RateLimitException(
+                message=str(exc.detail),
+                details={"limit_details": exc.detail, "path": request.url.path},
+                context={
+                    "client_ip": request.client.host if request.client else None,
+                    "user_agent": request.headers.get("user-agent"),
+                },
+            )
+            return await self.handle_rate_limit_exception(request, rate_limit_exc)
+
+        # Para otros HTTP exceptions, crear una ApplicationException
+        app_exc = ApplicationException(
+            message=str(exc.detail),
+            error_code=f"HTTP_{exc.status_code}",
+            status_code=exc.status_code,
+            context={"path": request.url.path},
+        )
+
+        return await self.handle_application_exception(request, app_exc)
+
+    # Tus handlers existentes se mantienen igual...
     async def handle_app_exception(
         self, request: Request, exc: BaseAppException
     ) -> JSONResponse:
@@ -161,7 +224,10 @@ class GlobalExceptionHandler:
         )
 
     def _build_log_context(
-        self, request: Request, exc: BaseAppException, original_exc: Exception = None
+        self,
+        request: Request,
+        exc: BaseAppException,
+        original_exc: Optional[Exception] = None,
     ) -> Dict[str, Any]:
         """Build context dictionary for logging"""
         context = {

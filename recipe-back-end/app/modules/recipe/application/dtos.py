@@ -275,13 +275,13 @@ class UpdateRecipeRequest(BaseModel):
             return None
         return [
             Step(
-                number=len(self.steps) + 1,
+                number=index + 1,
                 description=step_dto.description,
                 duration_minutes=step_dto.duration_minutes,
                 technique=step_dto.technique,
                 temperature=step_dto.temperature,
             )
-            for step_dto in self.steps
+            for index, step_dto in enumerate(self.steps)
         ]
 
     def create_tags(self) -> Optional[Set[Tag]]:

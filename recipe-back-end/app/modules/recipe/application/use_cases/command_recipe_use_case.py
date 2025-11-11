@@ -56,9 +56,8 @@ class CreateRecipeUseCaseImpl(CreateRecipeUseCase):
         logger.info(f"Author ID {author_id} validated successfully")
 
         recipe = self.create_recipe(request, author_id)
-        logger.info(f"Recipe '{request.name}' created successfully")
+        logger.info(f"Recipe '{request.name}' created ")
 
-        logger.info(f"Saving recipe '{request.name}' to repository")
         saved_recipe = await self.recipe_repository.save(recipe)
 
         logger.info(f"Recipe '{request.name}' saved with ID {saved_recipe.id}")
@@ -193,15 +192,12 @@ class IncrementViewCountUseCaseImpl(IncrementViewCountUseCase):
 
     async def execute(self, recipe_id: RecipeId) -> None:
         logger.info(f"Incrementing view count for Recipe {recipe_id}")
-        recipe = await self.recipe_repository.find_by_id(recipe_id)
-        if not recipe:
+        exists = await self.recipe_repository.exists_by_id(recipe_id)
+        if not exists:
             raise RecipeNotFoundException(recipe_id)
 
-        recipe.increment_view_count()
-        await self.recipe_repository.save(recipe)
-        logger.info(
-            f"View count for Recipe {recipe_id} incremented to {recipe.view_count}"
-        )
+        await self.recipe_repository.increase_view_count(recipe_id)
+        logger.info(f"View count for Recipe {recipe_id} incremented successfully")
 
 
 # TODO: Implement ScaleRecipeUseCaseImpl
@@ -284,13 +280,11 @@ class RestoreRecipeUseCaseImpl(RestoreRecipeUseCase):
     def __init__(self, recipe_repository: RecipeRepository) -> None:
         self.recipe_repository = recipe_repository
 
-    async def execute(self, recipe_id: RecipeId, author_id: UserId) -> None:
-        logger.info(
-            f"Executing RestoreRecipeUseCase for recipe_id: {recipe_id} by author_id: {author_id}"
-        )
+    async def execute(self, recipe_id: RecipeId) -> None:
+        logger.info(f"Executing RestoreRecipeUseCase for recipe_id: {recipe_id}")
 
-        recipe = await self.recipe_repository.find_by_id_and_author(
-            recipe_id, author_id
+        recipe = await self.recipe_repository.find_by_id(
+            include_deleted=True, recipe_id=recipe_id
         )
         if not recipe:
             raise RecipeNotFoundException(recipe_id)
@@ -298,4 +292,4 @@ class RestoreRecipeUseCaseImpl(RestoreRecipeUseCase):
         recipe.restore()
 
         await self.recipe_repository.save(recipe)
-        logger.info(f"Recipe {recipe_id} restored by author {author_id}")
+        logger.info(f"Recipe {recipe_id} restored")

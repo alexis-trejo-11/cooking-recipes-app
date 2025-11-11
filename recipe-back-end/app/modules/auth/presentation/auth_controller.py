@@ -5,6 +5,7 @@ from app.modules.auth.application.auth_use_cases import (
     AuthResponse,
 )
 from .app_depencies import SignUpUseCaseDep, LoginUseCaseDep
+from app.config.rate_limiter import rate_limit
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
     summary="User Registration",
     description="Create a new user account and return authentication tokens",
 )
+@rate_limit("strict")
 async def signup(
     request: SignUpRequest,
     use_case: SignUpUseCaseDep,
@@ -39,6 +41,7 @@ async def signup(
     summary="User Login",
     description="Authenticate user and return access token",
 )
+@rate_limit("strict")
 async def login(
     request: LoginRequest,
     use_case: LoginUseCaseDep,

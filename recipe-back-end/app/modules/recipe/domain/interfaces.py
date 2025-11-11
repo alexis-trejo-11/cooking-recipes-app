@@ -10,7 +10,12 @@ class RecipeRepository(ABC):
     """Interface for Recipe repository"""
 
     @abstractmethod
-    async def find_by_id(self, recipe_id: RecipeId) -> Optional[Recipe]:
+    async def find_by_id(
+        self,
+        recipe_id: RecipeId,
+        include_deleted: Optional[bool] = False,
+        with_relations: Optional[bool] = False,
+    ) -> Optional[Recipe]:
         pass
 
     @abstractmethod
@@ -31,6 +36,16 @@ class RecipeRepository(ABC):
 
     @abstractmethod
     async def delete(self, recipe_id: RecipeId) -> bool:
+        pass
+
+    @abstractmethod
+    async def increase_view_count(self, recipe_id: RecipeId) -> None:
+        pass
+
+    @abstractmethod
+    async def exists_by_id(
+        self, recipe_id: RecipeId, include_deleted: bool = False
+    ) -> bool:
         pass
 
     @abstractmethod

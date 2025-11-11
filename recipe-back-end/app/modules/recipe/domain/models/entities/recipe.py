@@ -156,7 +156,6 @@ class Recipe:
         """Registrar una actualización."""
         old_version = self.version
         self._timestamps = self._timestamps.record_update()
-        self._tracking_info = self._tracking_info.increase_version()
 
         logger.debug(
             f"Recipe {self.id} updated from v{old_version} to v{self.version} "
@@ -173,7 +172,9 @@ class Recipe:
     def restore(self) -> None:
         """Restaurar receta eliminada."""
         if not self.is_deleted:
-            return
+            raise RecipeValidationException(
+                f"Recipe {self.id} is not deleted and cannot be restored", "NOT_DELETED"
+            )
 
         self._timestamps = self._timestamps.mark_restored()
         self._record_update()
@@ -279,7 +280,7 @@ class Recipe:
         """Actualizar lista completa de pasos."""
         self._check_not_deleted()
 
-        self._collections.clear_steps()
+        self._collections = self._collections.clear_steps()
         self.add_steps(steps)
 
         self._record_update()
@@ -439,11 +440,6 @@ class Recipe:
         self._tracking_info = self._tracking_info.add_rating(rating)
         self._record_update()
         logger.debug(f"Rating {rating} added to recipe {self.id}")
-
-    def increment_view_count(self) -> None:
-        """Incrementar contador de vistas."""
-        self._tracking_info = self._tracking_info.increment_view_count()
-        logger.debug(f"View count incremented for recipe {self.id}")
 
     def increment_favorite_count(self) -> None:
         """Incrementar contador de favoritos."""

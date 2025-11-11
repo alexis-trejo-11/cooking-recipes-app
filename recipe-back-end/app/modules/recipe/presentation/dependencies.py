@@ -1,4 +1,6 @@
+from fastapi import Query
 from fastapi import Depends
+from typing import Optional
 from app.config.sql_session import get_db_session
 from app.config.app_settings import settings
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,8 +38,11 @@ from app.modules.recipe.application.use_cases.query_recipe_use_case import (
     SearchRecipesUseCaseImpl,
     GetUserRecipesUseCaseImpl,
 )
+from app.modules.recipe.application.dtos import RecipeSearchRequest
+
 
 from app.modules.auth.presentation.app_depencies import UserRepositoryDep
+from app.utils.external.page_request import PydanticPaginationParams as PaginationParams
 
 
 async def get_db_session_dependency() -> AsyncGenerator[AsyncSession, None]:
@@ -162,8 +167,51 @@ async def get_restore_recipe_use_case(
     return RestoreRecipeUseCaseImpl(recipe_repository)
 
 
+def get_pagination_params(
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+    sort_dir: str = Query("asc", regex="^(asc|desc)$"),
+    sort_by: str = Query("created_at"),
+) -> PaginationParams:
+    """
+    Dependency for pagination parameters.
+    """
+    return PaginationParams(page=page, size=size, sort_dir=sort_dir, sort_by=sort_by)
+
+
+def get_recipe_search_request(
+    pagination: PaginationParams = Depends(get_pagination_params),
+    name: Optional[str] = Query(None, min_length=1, max_length=200),
+    author_id: Optional[int] = Query(None, ge=1),
+    difficulty: Optional[str] = Query(None),
+    cuisine: Optional[str] = Query(None),
+    meal_types: Optional[set[str]] = Query(None),
+    tags: Optional[set[str]] = Query(None),
+    ingredient_name: Optional[str] = Query(None),
+    max_cook_time: Optional[int] = Query(None, ge=0),
+    min_rating: Optional[float] = Query(None, ge=0.0, le=5.0),
+) -> RecipeSearchRequest:
+    """
+    Dependency for RecipeSearchRequest.
+    """
+    return RecipeSearchRequest(
+        name=name,
+        author_id=author_id,
+        difficulty=difficulty,
+        cuisine=cuisine,
+        meal_types=list(meal_types) if meal_types else None,
+        ingredient_name=ingredient_name,
+        max_cooking_time=max_cook_time,
+        include_deleted=False,
+        tags=list(tags) if tags else None,
+        min_rating=min_rating,
+        pagination=pagination,
+    )
+
+
 # Command Use Case Dependencies
 AddRatingUseCaseDep = Annotated[AddRatingUseCase, Depends(get_add_rating_use_case)]
+
 
 CreateRecipeUseCaseDep = Annotated[
     CreateRecipeUseCase,

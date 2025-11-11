@@ -114,7 +114,7 @@ class DecreaseFavoriteUseCase(ABC):
 
 class RestoreRecipeUseCase(ABC):
     @abstractmethod
-    async def execute(self, recipe_id: RecipeId, author_id: UserId) -> None:
+    async def execute(self, recipe_id: RecipeId) -> None:
         pass
 
 

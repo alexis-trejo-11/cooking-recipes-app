@@ -38,7 +38,10 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
         self.mapper = RecipeMapper()
 
     async def find_by_id(
-        self, recipe_id: RecipeId, include_deleted: bool = False
+        self,
+        recipe_id: RecipeId,
+        include_deleted: Optional[bool] = False,
+        with_relations: Optional[bool] = False,
     ) -> Optional[Recipe]:
         """
         Get recipe by ID with all related data
@@ -51,16 +54,16 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
 
         stmt = select(RecipeModel).where(RecipeModel.id == recipe_id.value)
 
-        # Filter out deleted recipes unless explicitly requested
         if not include_deleted:
             stmt = stmt.where(RecipeModel.deleted_at.is_(None))
 
-        stmt = stmt.options(
-            selectinload(RecipeModel.ingredients),
-            selectinload(RecipeModel.steps),
-            selectinload(RecipeModel.tags),
-            selectinload(RecipeModel.meal_types),
-        )
+        if with_relations:
+            stmt = stmt.options(
+                selectinload(RecipeModel.ingredients),
+                selectinload(RecipeModel.steps),
+                selectinload(RecipeModel.tags),
+                selectinload(RecipeModel.meal_types),
+            )
 
         result = await self.session.execute(stmt)
         recipe_model = result.scalar_one_or_none()
@@ -220,6 +223,46 @@ class SQLAlchemyRecipeRepository(RecipeRepository):
         else:
             logger.info("Creating new recipe")
             return await self._create(recipe)
+
+    async def increase_view_count(self, recipe_id: RecipeId) -> None:
+        """Increase view count of a recipe by 1"""
+        logger.debug(f"Increasing view count for recipe ID: {recipe_id}")
+
+        stmt = (
+            update(RecipeModel)
+            .where(
+                and_(
+                    RecipeModel.id == recipe_id.value,
+                    RecipeModel.deleted_at.is_(None),
+                )
+            )
+            .values(view_count=RecipeModel.view_count + 1)
+        )
+
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+
+        if result.rowcount == 0:
+            logger.warning(f"Recipe not found for increasing view count: {recipe_id}")
+        else:
+            logger.debug(f"View count increased for recipe ID: {recipe_id}")
+
+    async def exists_by_id(
+        self, recipe_id: RecipeId, include_deleted: bool = False
+    ) -> bool:
+        """Check if recipe exists by ID"""
+        logger.debug(f"Checking existence of recipe by ID: {recipe_id}")
+
+        conditions = [RecipeModel.id == recipe_id.value]
+        if not include_deleted:
+            conditions.append(RecipeModel.deleted_at.is_(None))
+
+        stmt = select(select(RecipeModel.id).where(and_(*conditions)).exists())
+        result = await self.session.execute(stmt)
+        exists = result.scalar() or False
+
+        logger.debug(f"Existence check for recipe ID {recipe_id}: {exists}")
+        return exists
 
     async def delete(self, recipe_id: RecipeId) -> bool:
         """Soft delete recipe by ID"""

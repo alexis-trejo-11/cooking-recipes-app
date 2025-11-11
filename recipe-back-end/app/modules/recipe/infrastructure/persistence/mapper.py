@@ -168,8 +168,10 @@ class RecipeMapper:
     @staticmethod
     def _map_ingredients(ingredient_models: List[IngredientModel]) -> List[Ingredient]:
         """Mapea ingredientes de modelo a entidad"""
-        ingredients = []
+        if not ingredient_models:
+            return []
 
+        ingredients = []
         for ing_model in ingredient_models:
             try:
                 quantity = Quantity(
@@ -239,6 +241,9 @@ class RecipeMapper:
     def _map_meal_types(meal_type_models: List[RecipeMealTypeModel]) -> Set[MealType]:
         """Mapea meal types de modelo a enum"""
         meal_types = set()
+
+        if not meal_type_models:
+            return meal_types
 
         for mt_model in meal_type_models:
             try:

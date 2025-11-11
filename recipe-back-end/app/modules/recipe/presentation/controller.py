@@ -5,9 +5,56 @@ from app.modules.recipe.application.dtos import *
 from app.modules.recipe.application.use_cases.base import *
 from app.modules.recipe.application.exceptions import *
 from .dependencies import *
-from app.utils.external.page_request import PydanticPaginationParams as PaginationParams
 
 router = APIRouter(prefix="/api/v1/recipes", tags=["Recipes"])
+
+
+@router.get(
+    "",
+    response_model=RecipePageResponse,
+    summary="Search Recipes",
+    description="Search recipes with filters",
+)
+async def search_recipes(
+    use_case: SearchRecipesUseCaseDep,
+    request: RecipeSearchRequest = Depends(get_recipe_search_request),
+) -> RecipePageResponse:
+    """
+    Search recipes with advanced filters.
+
+    - **query**: Search query text
+    - **difficulty**: Filter by difficulty level
+    - **cuisine**: Filter by cuisine type
+    - **meal_type**: Filter by meal type
+    - **diet**: Filter by diet type
+    - **max_prep_time**: Maximum preparation time
+    - **max_cook_time**: Maximum cooking time
+    - **min_rating**: Minimum average rating
+    - **tags**: Filter by tags
+    - **exclude_allergens**: Exclude recipes with these allergens
+    - **page**: Page number
+    - **page_size**: Page size
+    """
+    return await use_case.execute(request)
+
+
+@router.get(
+    "/user/",
+    response_model=RecipePageResponse,
+    summary="Get User Recipes",
+    description="Get paginated list of recipes by user",
+)
+async def get_user_recipes(
+    use_case: GetUserRecipesUseCaseDep,
+    pagination: PaginationParams = Depends(get_pagination_params),
+    # current_user: User = Depends(get_current_user),
+) -> RecipePageResponse:
+    """
+    Get paginated list of recipes created by the current user.
+    - **page**: Page number
+    - **page_size**: Page size
+    """
+    return await use_case.execute(UserId(1), pagination)
 
 
 @router.post(
@@ -61,31 +108,10 @@ async def get_recipe(
     - **recipe_id**: Recipe identifier
     """
     await increment_views.execute(RecipeId(recipe_id))
-
     recipe = await use_case.execute(RecipeId(recipe_id))
     return recipe
 
-
-@router.get(
-    "/",
-    response_model=RecipePageResponse,
-    summary="Search Recipes",
-    description="Search recipes with pagination if not filters are provided it will return active recipes paginated by default",
-)
-async def search_recipes(
-    use_case: SearchRecipesUseCaseDep,
-) -> RecipePageResponse:
-    """
-    Search recipes with pagination.
-
-    - **page**: Page number
-    - **page_size**: Page size
-    """
-    pagination = PydanticPaginationParams(
-        page=1, size=10, sort_dir="asc", sort_by="created_at"
-    )
-    request = RecipeSearchRequest(include_deleted=False, pagination=pagination)
-    return await use_case.execute(request)
+    result = await use_case.execute(RecipeId(recipe_id), UserId(1))
 
 
 @router.put(
@@ -98,7 +124,7 @@ async def update_recipe(
     request: UpdateRecipeRequest,
     use_case: UpdateRecipeUseCaseDep,
     recipe_id: int = Path(..., gt=0, description="Recipe ID"),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ) -> RecipeUpdatedResponse:
     """
     Update an existing recipe.
@@ -111,56 +137,8 @@ async def update_recipe(
     - **steps**: Optional updated steps list
     - **tags**: Optional updated tags
     """
-    result = await use_case.execute(RecipeId(recipe_id), request, current_user.user_id)
+    result = await use_case.execute(RecipeId(recipe_id), request, UserId(1))
     return result
-
-
-@router.delete(
-    "/{recipe_id}",
-    response_model=RecipeDeletedResponse,
-    summary="Delete Recipe",
-    description="Delete a recipe (soft delete)",
-)
-async def delete_recipe(
-    use_case: DeleteRecipeUseCaseDep,
-    recipe_id: int = Path(..., gt=0, description="Recipe ID"),
-    current_user: User = Depends(get_current_user),
-) -> RecipeDeletedResponse:
-    """
-    Delete a recipe (soft delete).
-
-    - **recipe_id**: Recipe identifier
-    """
-    result = await use_case.execute(RecipeId(recipe_id), current_user.user_id)
-    return result
-
-
-@router.post(
-    "/search",
-    response_model=RecipePageResponse,
-    summary="Search Recipes",
-    description="Search recipes with filters",
-)
-async def search_recipes(
-    request: RecipeSearchRequest, use_case: SearchRecipesUseCaseDep
-) -> RecipePageResponse:
-    """
-    Search recipes with advanced filters.
-
-    - **query**: Search query text
-    - **difficulty**: Filter by difficulty level
-    - **cuisine**: Filter by cuisine type
-    - **meal_type**: Filter by meal type
-    - **diet**: Filter by diet type
-    - **max_prep_time**: Maximum preparation time
-    - **max_cook_time**: Maximum cooking time
-    - **min_rating**: Minimum average rating
-    - **tags**: Filter by tags
-    - **exclude_allergens**: Exclude recipes with these allergens
-    - **page**: Page number
-    - **page_size**: Page size
-    """
-    return await use_case.execute(request)
 
 
 @router.post(
@@ -237,32 +215,31 @@ async def decrease_favorite(
 async def restore_recipe(
     use_case: RestoreRecipeUseCaseDep,
     recipe_id: int = Path(..., gt=0, description="Recipe ID"),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ):
     """
     Restore a soft-deleted recipe.
 
     - **recipe_id**: Recipe identifier
     """
-    await use_case.execute(RecipeId(recipe_id), current_user.user_id)
+    await use_case.execute(RecipeId(recipe_id))
 
 
-@router.get(
-    "/user/{user_id}",
-    response_model=RecipePageResponse,
-    summary="Get User Recipes",
-    description="Get paginated list of recipes by user",
+@router.delete(
+    "/{recipe_id}",
+    response_model=RecipeDeletedResponse,
+    summary="Delete Recipe",
+    description="Delete a recipe (soft delete)",
 )
-async def get_user_recipes(
-    use_case: GetUserRecipesUseCaseDep,
-    pagination: PaginationParams,
-    current_user: User = Depends(get_current_user),
-) -> RecipePageResponse:
+async def delete_recipe(
+    use_case: DeleteRecipeUseCaseDep,
+    recipe_id: int = Path(..., gt=0, description="Recipe ID"),
+    # current_user: User = Depends(get_current_user),
+) -> RecipeDeletedResponse:
     """
-    Get paginated list of recipes created by a specific user.
+    Delete a recipe (soft delete).
 
-    - **user_id**: User identifier
-    - **page**: Page number
-    - **page_size**: Page size
+    - **recipe_id**: Recipe identifier
     """
-    return await use_case.execute(current_user.user_id, pagination)
+    result = await use_case.execute(RecipeId(recipe_id), UserId(1))
+    return result

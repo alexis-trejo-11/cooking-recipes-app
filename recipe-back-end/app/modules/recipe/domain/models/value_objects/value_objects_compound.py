@@ -358,16 +358,6 @@ class RecipeTrackingInfo:
             version=self._version,
         )
 
-    def increment_view_count(self) -> "RecipeTrackingInfo":
-        """Incrementar contador de vistas."""
-        return RecipeTrackingInfo(
-            rating_sum=self._rating_sum,
-            rating_count=self._rating_count,
-            view_count=self._view_count + 1,
-            favorite_count=self._favorite_count,
-            version=self._version,
-        )
-
     def increment_favorite_count(self) -> "RecipeTrackingInfo":
         """Incrementar contador de favoritos."""
         return RecipeTrackingInfo(

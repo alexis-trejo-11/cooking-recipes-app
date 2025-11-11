@@ -110,6 +110,20 @@ class SecurityException(BaseAppException):
         super().__init__(message, error_code, status_code, details, context)
 
 
+class RateLimitException(BaseAppException):
+    """Base exception for rate limiting errors (429)"""
+
+    def __init__(
+        self,
+        message: str = "Too many requests",
+        error_code: str = "RATE_LIMIT_EXCEEDED",
+        status_code: int = 429,
+        details: Optional[Dict[str, Any]] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(message, error_code, status_code, details, context)
+
+
 class ServerException(BaseAppException):
     """Base exception for server errors (5xx)"""
 
