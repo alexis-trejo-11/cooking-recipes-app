@@ -6,11 +6,12 @@ must satisfy. They keep the domain layer independent of persistence details.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import Optional
 from app.utils.core.pagination import Page, PaginationParams
 from app.utils.core.specification import Specification
 from app.modules.recipe.domain.models.entities.recipe import Recipe, RecipeId
 from app.modules.auth.domain.user import UserId
+from app.modules.recipe.domain.models.entities.review import Review
 
 
 class RecipeRepository(ABC):
@@ -161,7 +162,7 @@ class RecipeFavoriteRepository(ABC):
         pass
 
     @abstractmethod
-    async def toggle(self, recipe_id: int, user_id: int) -> bool:
+    async def toggle(self, recipe_id: RecipeId, user_id: UserId) -> bool:
         """
         Toggle favorite status for a user.
 
@@ -175,7 +176,7 @@ class RecipeFavoriteRepository(ABC):
         pass
 
     @abstractmethod
-    async def exists(self, recipe_id: int, user_id: int) -> bool:
+    async def exists(self, recipe_id: RecipeId, user_id: UserId) -> bool:
         """
         Check if recipe is favorited by user.
 
@@ -197,6 +198,19 @@ class RecipeReviewRepository(ABC):
     """
 
     @abstractmethod
+    async def exists(self, recipe_id: RecipeId, user_id: UserId) -> bool:
+        """
+        Check if a user has reviewed a recipe.
+
+        Args:
+            recipe_id: Recipe identifier
+            user_id: User identifier
+        Returns:
+            True if review exists, False otherwise
+        """
+        pass
+
+    @abstractmethod
     async def count_by_recipe(self, recipe_id: int) -> int:
         """
         Count reviews for a recipe.
@@ -210,9 +224,7 @@ class RecipeReviewRepository(ABC):
         pass
 
     @abstractmethod
-    async def save(
-        self, recipe_id: int, user_id: int, rating: int, comment: Optional[str]
-    ) -> None:
+    async def save(self, review: Review) -> None:
         """
         Create or update a review.
 
@@ -221,5 +233,16 @@ class RecipeReviewRepository(ABC):
             user_id: User identifier
             rating: Rating value (1-5)
             comment: Optional review comment
+        """
+        pass
+
+    @abstractmethod
+    async def delete(self, recipe_id: RecipeId, user_id: UserId) -> None:
+        """
+        Delete a user's review for a recipe.
+
+        Args:
+            recipe_id: Recipe identifier
+            user_id: User identifier
         """
         pass

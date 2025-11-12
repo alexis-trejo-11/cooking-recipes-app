@@ -329,44 +329,21 @@ class RecipeTrackingInfo:
     def __init__(
         self,
         rating_sum: int = 0,
-        rating_count: int = 0,
+        review_count: int = 0,
         view_count: int = 0,
         favorite_count: int = 0,
         version: int = 1,
     ):
-        if rating_sum < 0 or rating_count < 0 or view_count < 0 or favorite_count < 0:
+        if rating_sum < 0 or review_count < 0 or view_count < 0 or favorite_count < 0:
             raise ValueError("Count values cannot be negative")
         if version < 1:
             raise ValueError("Version must be at least 1")
 
         self._rating_sum = rating_sum
-        self._rating_count = rating_count
+        self._rating_count = review_count
         self._view_count = view_count
         self._favorite_count = favorite_count
         self._version = version
-
-    def add_rating(self, rating: int) -> "RecipeTrackingInfo":
-        """Agregar rating."""
-        if not 1 <= rating <= 5:
-            raise ValueError("Rating must be between 1 and 5")
-
-        return RecipeTrackingInfo(
-            rating_sum=self._rating_sum + rating,
-            rating_count=self._rating_count + 1,
-            view_count=self._view_count,
-            favorite_count=self._favorite_count,
-            version=self._version,
-        )
-
-    def increment_favorite_count(self) -> "RecipeTrackingInfo":
-        """Incrementar contador de favoritos."""
-        return RecipeTrackingInfo(
-            rating_sum=self._rating_sum,
-            rating_count=self._rating_count,
-            view_count=self._view_count,
-            favorite_count=self._favorite_count + 1,
-            version=self._version,
-        )
 
     def decrement_favorite_count(self) -> "RecipeTrackingInfo":
         """Decrementar contador de favoritos."""
@@ -374,7 +351,7 @@ class RecipeTrackingInfo:
             raise ValueError("Favorite count cannot be negative")
         return RecipeTrackingInfo(
             rating_sum=self._rating_sum,
-            rating_count=self._rating_count,
+            review_count=self._rating_count,
             view_count=self._view_count,
             favorite_count=self._favorite_count - 1,
             version=self._version,
@@ -384,7 +361,7 @@ class RecipeTrackingInfo:
         """Incrementar versión."""
         return RecipeTrackingInfo(
             rating_sum=self._rating_sum,
-            rating_count=self._rating_count,
+            review_count=self._rating_count,
             view_count=self._view_count,
             favorite_count=self._favorite_count,
             version=self._version + 1,
@@ -401,7 +378,7 @@ class RecipeTrackingInfo:
         return self._rating_sum
 
     @property
-    def rating_count(self) -> int:
+    def review_count(self) -> int:
         return self._rating_count
 
     @property
@@ -420,12 +397,12 @@ class RecipeTrackingInfo:
     def reconstruct(
         cls,
         rating_sum: int,
-        rating_count: int,
+        review_count: int,
         view_count: int,
         favorite_count: int,
         version: int,
     ) -> "RecipeTrackingInfo":
-        return cls(rating_sum, rating_count, view_count, favorite_count, version)
+        return cls(rating_sum, review_count, view_count, favorite_count, version)
 
     def __eq__(self, other):
         if not isinstance(other, RecipeTrackingInfo):

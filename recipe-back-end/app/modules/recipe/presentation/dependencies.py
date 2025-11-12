@@ -5,39 +5,41 @@ from app.config.sql_session import get_db_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator, Annotated
 from app.modules.recipe.infrastructure.persistence.repository import (
-    SQLAlchemyRecipeRepository,
+    SqlAlchemyRecipeRepository,
+    SqlAlchemyRecipeReviewRepository,
+    SqlAlchemyRecipeFavoriteRepository,
 )
-from app.modules.recipe.domain.interfaces import RecipeRepository
-from app.modules.recipe.application.use_cases.base import (
+from app.modules.recipe.domain.interfaces import (
+    RecipeRepository,
+    RecipeReviewRepository,
+    RecipeFavoriteRepository,
+)
+
+from app.modules.recipe.application.use_cases import (
     CreateRecipeUseCase,
     GetRecipeUseCase,
     RestoreRecipeUseCase,
     SearchRecipesUseCase,
-    AddRatingUseCase,
+    CreateReviewUseCase,
+    DeleteReviewUseCase,
     IncrementViewCountUseCase,
     ToggleFavoriteUseCase,
     GetUserRecipesUseCase,
     UpdateRecipeUseCase,
     DeleteRecipeUseCase,
-)
-
-from app.modules.recipe.application.use_cases.command_recipe_use_case import (
     CreateRecipeUseCaseImpl,
-    AddRatingUseCaseImpl,
+    CreateReviewUseCaseImpl,
+    DeleteReviewUseCaseImpl,
     IncrementViewCountUseCaseImpl,
     UpdateRecipeUseCaseImpl,
     DeleteRecipeUseCaseImpl,
-    ToggleFavoriteUseCaseImpl,
     RestoreRecipeUseCaseImpl,
-)
-from app.modules.recipe.application.use_cases.query_recipe_use_case import (
     GetRecipeUseCaseImpl,
     SearchRecipesUseCaseImpl,
     GetUserRecipesUseCaseImpl,
+    ToggleFavoriteUseCaseImpl,
 )
 from app.modules.recipe.application.dtos import RecipeSearchRequest
-
-
 from app.modules.auth.presentation.app_depencies import UserRepositoryDep
 from app.utils.external.page_request import PydanticPaginationParams as PaginationParams
 
@@ -54,6 +56,16 @@ async def get_db_session_dependency() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
+async def get_recipe_favorite_repository(
+    session: Annotated[AsyncSession, Depends(get_db_session_dependency)],
+) -> RecipeFavoriteRepository:
+    """
+    Dependency for RecipeFavoriteRepository.
+    Provides SQLAlchemy implementation.
+    """
+    return SqlAlchemyRecipeFavoriteRepository(session)
+
+
 async def get_recipe_repository(
     session: Annotated[AsyncSession, Depends(get_db_session_dependency)],
 ) -> RecipeRepository:
@@ -61,16 +73,41 @@ async def get_recipe_repository(
     Dependency for RecipeRepository.
     Provides SQLAlchemy implementation.
     """
-    return SQLAlchemyRecipeRepository(session)
+    return SqlAlchemyRecipeRepository(session)
 
 
-async def get_add_rating_use_case(
+async def get_recipe_review_repository(
+    session: Annotated[AsyncSession, Depends(get_db_session_dependency)],
+) -> RecipeReviewRepository:
+    """
+    Dependency for RecipeReviewRepository.
+    Provides SQLAlchemy implementation.
+    """
+    return SqlAlchemyRecipeReviewRepository(session)
+
+
+async def get_create_review_use_case(
     recipe_repository: Annotated[RecipeRepository, Depends(get_recipe_repository)],
-) -> AddRatingUseCase:
+    recipe_review_repository: Annotated[
+        RecipeReviewRepository, Depends(get_recipe_review_repository)
+    ],
+) -> CreateReviewUseCase:
     """
-    Dependency for AddRatingUseCase.
+    Dependency for CreateReviewUseCase.
     """
-    return AddRatingUseCaseImpl(recipe_repository)
+    return CreateReviewUseCaseImpl(recipe_repository, recipe_review_repository)
+
+
+async def get_delete_review_use_case(
+    recipe_repository: Annotated[RecipeRepository, Depends(get_recipe_repository)],
+    recipe_review_repository: Annotated[
+        RecipeReviewRepository, Depends(get_recipe_review_repository)
+    ],
+) -> DeleteReviewUseCase:
+    """
+    Dependency for DeleteReviewUseCase.
+    """
+    return DeleteReviewUseCaseImpl(recipe_repository, recipe_review_repository)
 
 
 async def get_increment_view_count_use_case(
@@ -103,11 +140,14 @@ async def get_update_recipe_use_case(
 
 async def get_toggle_favorite_use_case(
     recipe_repository: Annotated[RecipeRepository, Depends(get_recipe_repository)],
+    recipe_favorite_repository: Annotated[
+        RecipeFavoriteRepository, Depends(get_recipe_favorite_repository)
+    ],
 ) -> ToggleFavoriteUseCase:
     """
     Dependency for IncreaseFavoriteUseCase.
     """
-    return ToggleFavoriteUseCaseImpl(recipe_repository)
+    return ToggleFavoriteUseCaseImpl(recipe_repository, recipe_favorite_repository)
 
 
 async def get_delete_recipe_use_case(
@@ -198,7 +238,13 @@ def get_recipe_search_request(
 
 
 # Command Use Case Dependencies
-AddRatingUseCaseDep = Annotated[AddRatingUseCase, Depends(get_add_rating_use_case)]
+CreateReviewUseCaseDep = Annotated[
+    CreateReviewUseCase, Depends(get_create_review_use_case)
+]
+
+DeleteReviewUseCaseDep = Annotated[
+    DeleteReviewUseCase, Depends(get_delete_review_use_case)
+]
 
 
 CreateRecipeUseCaseDep = Annotated[

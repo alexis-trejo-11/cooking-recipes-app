@@ -11,6 +11,7 @@ from ..value_objects.value_objects_compound import (
     RecipeTrackingInfo,
     RecipeMetadata,
     TimeStamps,
+    TimeStamps,
 )
 from .ingredient import Ingredient
 
@@ -130,7 +131,7 @@ class Recipe:
 
         recipe._tracking_info = RecipeTrackingInfo.reconstruct(
             rating_sum=data["rating_sum"],
-            rating_count=data["rating_count"],
+            review_count=data["review_count"],
             view_count=data["view_count"],
             favorite_count=data["favorite_count"],
             version=data["version"],
@@ -401,13 +402,6 @@ class Recipe:
         )
         return suitable
 
-    def increase_favorite_count(self) -> None:
-        """Incrementar contador de favoritos."""
-        self._check_not_deleted()
-        self._tracking_info = self._tracking_info.increment_favorite_count()
-        self._record_update()
-        logger.debug(f"Favorite count incremented for recipe {self.id}")
-
     def decrease_favorite_count(self) -> None:
         """Decrementar contador de favoritos."""
         self._check_not_deleted()
@@ -433,20 +427,6 @@ class Recipe:
 
         logger.debug(f"Allergens detected in recipe {self.id}: {allergens}")
         return allergens
-
-    def add_rating(self, rating: int) -> None:
-        """Agregar rating a la receta (escala 1-5)."""
-        self._check_not_deleted()
-        self._tracking_info = self._tracking_info.add_rating(rating)
-        self._record_update()
-        logger.debug(f"Rating {rating} added to recipe {self.id}")
-
-    def increment_favorite_count(self) -> None:
-        """Incrementar contador de favoritos."""
-        self._check_not_deleted()
-        self._tracking_info = self._tracking_info.increment_favorite_count()
-        self._record_update()
-        logger.debug(f"Favorite count incremented for recipe {self.id}")
 
     @property
     def id(self) -> RecipeId:
@@ -513,8 +493,8 @@ class Recipe:
         return self._tracking_info._rating_sum
 
     @property
-    def rating_count(self) -> int:
-        return self._tracking_info.rating_count
+    def review_count(self) -> int:
+        return self._tracking_info.review_count
 
     @property
     def view_count(self) -> int:

@@ -1,14 +1,15 @@
-from fastapi import APIRouter, HTTPException, status, Query, Path
+from fastapi import APIRouter, status, Path
 from app.modules.auth.presentation.auth_depencies import get_current_user
 from app.modules.auth.domain.user import User
 from app.modules.recipe.application.dtos import *
-from app.modules.recipe.application.use_cases.base import *
 from app.modules.recipe.application.exceptions import *
 from .dependencies import *
+from app.config.rate_limiter import rate_limit
 
 router = APIRouter(prefix="/api/v1/recipes", tags=["Recipes"])
 
 
+@rate_limit("public")
 @router.get(
     "",
     response_model=RecipePageResponse,
@@ -38,6 +39,7 @@ async def search_recipes(
     return await use_case.execute(request)
 
 
+@rate_limit("generous")
 @router.get(
     "/user/",
     response_model=RecipePageResponse,
@@ -64,6 +66,7 @@ async def get_user_recipes(
     summary="Create Recipe",
     description="Create a new recipe",
 )
+@rate_limit("sensitive")
 async def create_recipe(
     request: CreateRecipeRequest,
     use_case: CreateRecipeUseCaseDep,
@@ -95,6 +98,7 @@ async def create_recipe(
     summary="Get Recipe",
     description="Get recipe details by ID",
 )
+@rate_limit("public")
 async def get_recipe(
     use_case: GetRecipeUseCaseDep,
     increment_views: IncrementViewCountUseCaseDep,
@@ -117,6 +121,7 @@ async def get_recipe(
     summary="Update Recipe",
     description="Update an existing recipe",
 )
+@rate_limit("sensitive")
 async def update_recipe(
     request: UpdateRecipeRequest,
     use_case: UpdateRecipeUseCaseDep,
@@ -140,23 +145,43 @@ async def update_recipe(
 
 @router.post(
     "/{recipe_id}/ratings",
-    response_model=RatingAddedResponse,
+    response_model=ReviewCreatedResponse,
     summary="Add Rating",
     description="Add a rating to a recipe",
 )
-async def add_rating(
-    request: AddRatingRequest,
-    use_case: AddRatingUseCaseDep,
-    recipe_id: int = Path(..., gt=0, description="Recipe ID"),
+@rate_limit("sensitive")
+async def add_review(
+    request: CreateReviewRequest,
+    use_case: CreateReviewUseCaseDep,
     logged_user: User = Depends(get_current_user),
-) -> RatingAddedResponse:
+) -> ReviewCreatedResponse:
     """
-    Add a rating to a recipe.
+    Add a review to a recipe.
 
     - **recipe_id**: Recipe identifier
     - **rating**: Rating value (1-5)
     """
-    return await use_case.execute(RecipeId(recipe_id), request, logged_user.user_id)
+    return await use_case.execute(request)
+
+
+@router.delete(
+    "/{recipe_id}/ratings",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete Rating",
+    description="Delete a rating from a recipe",
+)
+@rate_limit("sensitive")
+async def delete_review(
+    use_case: DeleteReviewUseCaseDep,
+    recipe_id: int = Path(..., gt=0, description="Recipe ID"),
+    logged_user: User = Depends(get_current_user),
+) -> None:
+    """
+    Delete a review from a recipe.
+
+    - **recipe_id**: Recipe identifier
+    """
+    await use_case.execute(RecipeId(recipe_id), logged_user.user_id)
 
 
 @router.patch(
@@ -164,6 +189,7 @@ async def add_rating(
     summary="Toggle Favorite",
     description="Add or remove recipe from favorites",
 )
+@rate_limit("generous")
 async def toggle_favorite(
     use_case: ToggleFavoriteUseCaseDep,
     recipe_id: int = Path(..., gt=0, description="Recipe ID"),
@@ -187,6 +213,7 @@ async def toggle_favorite(
     description="Restore a soft-deleted recipe",
     status_code=status.HTTP_204_NO_CONTENT,
 )
+@rate_limit("sensitive")
 async def restore_recipe(
     use_case: RestoreRecipeUseCaseDep,
     recipe_id: int = Path(..., gt=0, description="Recipe ID"),
@@ -202,19 +229,19 @@ async def restore_recipe(
 
 @router.delete(
     "/{recipe_id}",
-    response_model=RecipeDeletedResponse,
     summary="Delete Recipe",
+    status_code=status.HTTP_204_NO_CONTENT,
     description="Delete a recipe (soft delete)",
 )
+@rate_limit("sensitive")
 async def delete_recipe(
     use_case: DeleteRecipeUseCaseDep,
     recipe_id: int = Path(..., gt=0, description="Recipe ID"),
     logged_user: User = Depends(get_current_user),
-) -> RecipeDeletedResponse:
+) -> None:
     """
     Delete a recipe (soft delete).
 
     - **recipe_id**: Recipe identifier
     """
-    result = await use_case.execute(RecipeId(recipe_id), logged_user.user_id)
-    return result
+    await use_case.execute(RecipeId(recipe_id), logged_user.user_id)

@@ -10,14 +10,15 @@ from app.utils.external.page_request import (
     PydanticPaginationParams,
     PydanticPaginationResponse,
 )
-from app.modules.auth.domain.user import UserId
-
+from app.modules.recipe.domain.models.entities.review import Review
 from app.modules.recipe.domain.models.entities.ingredient import (
     IngredientProperties,
     Ingredient,
 )
 from app.modules.recipe.domain.models.entities.recipe import (
     Recipe,
+    RecipeId,
+    UserId,
     Quantity,
     Step,
     Tag,
@@ -335,8 +336,19 @@ class ScaleRecipeRequest(BaseModel):
     )
 
 
-class AddRatingRequest(BaseModel):
+class CreateReviewRequest(BaseModel):
     rating: int = Field(..., ge=1, le=5, description="Rating from 1 to 5")
+    recipe_id: int = Field(..., gt=0, description="Recipe ID")
+    user_id: int = Field(..., gt=0, description="User ID")
+    comment: str = Field(..., max_length=500, description="Review comment")
+
+    def to_domain(self) -> Review:
+        return Review(
+            recipe_id=RecipeId(self.recipe_id),
+            user_id=UserId(self.user_id),
+            rating=self.rating,
+            comment=self.comment,
+        )
 
 
 class RecipeSearchRequest(BaseModel):
@@ -509,7 +521,7 @@ class RecipeSummaryResponse(BaseModel):
                 if recipe.average_rating is not None
                 else None
             ),
-            rating_count=recipe.rating_count,
+            rating_count=recipe.review_count,
             view_count=recipe.view_count,
             favorite_count=recipe.favorite_count,
             tags=[
@@ -626,7 +638,7 @@ class RecipeResponse(BaseModel):
             average_rating=Decimal(
                 str(recipe.average_rating) if recipe.average_rating else "0"
             ),
-            rating_count=recipe.rating_count,
+            rating_count=recipe.review_count,
             view_count=recipe.view_count,
             favorite_count=recipe.favorite_count,
             version=recipe.version,
@@ -652,23 +664,11 @@ class RecipeUpdatedResponse(BaseModel):
     message: str = "Recipe updated successfully"
 
 
-class RecipeDeletedResponse(BaseModel):
-    id: int
-    message: str = "Recipe deleted successfully"
-
-
-class RatingAddedResponse(BaseModel):
+class ReviewCreatedResponse(BaseModel):
     recipe_id: int
     new_average_rating: Optional[Decimal]
     total_ratings: int
     message: str = "Rating added successfully"
-
-
-class RecipeScaledResponse(BaseModel):
-    original_recipe_id: int
-    scaled_recipe_id: int
-    factor: Decimal
-    message: str = "Recipe scaled successfully"
 
 
 class RecipePageResponse(BaseModel):

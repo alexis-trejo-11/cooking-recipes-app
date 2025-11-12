@@ -35,7 +35,7 @@ class RecipeReconstructData(TypedDict):
 
     # Tracking
     rating_sum: int
-    rating_count: int
+    review_count: int
     view_count: int
     favorite_count: int
     version: int

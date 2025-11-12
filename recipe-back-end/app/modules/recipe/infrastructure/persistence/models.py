@@ -191,9 +191,6 @@ class RecipeModel(Base):
         CheckConstraint("cook_time_minutes >= 0", name="check_cook_time_non_negative"),
         CheckConstraint("rest_time_minutes >= 0", name="check_rest_time_non_negative"),
         CheckConstraint("view_count >= 0", name="check_view_count_non_negative"),
-        CheckConstraint(
-            "favorite_count >= 0", name="check_favorite_count_non_negative"
-        ),
         CheckConstraint("version > 0", name="check_version_positive"),
         # Índices compuestos para queries comunes
         Index("idx_recipes_author_created", "author_id", "created_at"),

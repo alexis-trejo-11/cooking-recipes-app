@@ -5,7 +5,11 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.utils.core.pagination import Page, PaginationParams
 from app.utils.core.specification import Specification
-from app.modules.recipe.domain.interfaces import RecipeRepository
+from app.modules.recipe.domain.interfaces import (
+    RecipeRepository,
+    RecipeReviewRepository,
+    RecipeFavoriteRepository,
+)
 from app.modules.auth.domain.user import UserId
 from app.modules.recipe.domain.models.entities.recipe import (
     Recipe,
@@ -15,6 +19,7 @@ from app.modules.recipe.domain.models.entities.recipe import (
     Tag,
     RecipeId,
 )
+from app.modules.recipe.domain.models.entities.review import Review
 from app.modules.recipe.infrastructure.persistence.models import (
     RecipeModel,
     IngredientModel,
@@ -32,7 +37,7 @@ from .mapper import RecipeMapper
 logger = logging.getLogger("app.modules.recipe")
 
 
-class SQLAlchemyRecipeRepository(RecipeRepository):
+class SqlAlchemyRecipeRepository(RecipeRepository):
     """SQLAlchemy implementation of recipe aggregate repository."""
 
     def __init__(self, session: AsyncSession):
@@ -526,7 +531,7 @@ class _TagRepository:
         await self.session.execute(stmt)
 
 
-class RecipeFavoriteRepository:
+class SqlAlchemyRecipeFavoriteRepository(RecipeFavoriteRepository):
     """Repository for recipe favorite operations."""
 
     def __init__(self, session: AsyncSession):
@@ -542,7 +547,7 @@ class RecipeFavoriteRepository:
         result = await self.session.execute(stmt)
         return result.scalar() or 0
 
-    async def toggle(self, recipe_id: int, user_id: int) -> bool:
+    async def toggle(self, recipe_id: RecipeId, user_id: UserId) -> bool:
         """
         Toggle favorite status.
 
@@ -558,14 +563,14 @@ class RecipeFavoriteRepository:
             await self._add(recipe_id, user_id)
             return True
 
-    async def exists(self, recipe_id: int, user_id: int) -> bool:
+    async def exists(self, recipe_id: RecipeId, user_id: UserId) -> bool:
         """Check if recipe is favorited by user."""
         stmt = select(
             select(recipe_favorites.c.recipe_id)
             .where(
                 and_(
-                    recipe_favorites.c.recipe_id == recipe_id,
-                    recipe_favorites.c.user_id == user_id,
+                    recipe_favorites.c.recipe_id == recipe_id.value,
+                    recipe_favorites.c.user_id == user_id.value,
                 )
             )
             .exists()
@@ -573,31 +578,46 @@ class RecipeFavoriteRepository:
         result = await self.session.execute(stmt)
         return result.scalar() or False
 
-    async def _add(self, recipe_id: int, user_id: int) -> None:
+    async def _add(self, recipe_id: RecipeId, user_id: UserId) -> None:
         """Add favorite."""
         stmt = recipe_favorites.insert().values(
-            recipe_id=recipe_id,
-            user_id=user_id,
+            recipe_id=recipe_id.value,
+            user_id=user_id.value,
             created_at=datetime.now(timezone.utc),
         )
         await self.session.execute(stmt)
 
-    async def _remove(self, recipe_id: int, user_id: int) -> None:
+    async def _remove(self, recipe_id: RecipeId, user_id: UserId) -> None:
         """Remove favorite."""
         stmt = delete(recipe_favorites).where(
             and_(
-                recipe_favorites.c.recipe_id == recipe_id,
-                recipe_favorites.c.user_id == user_id,
+                recipe_favorites.c.recipe_id == recipe_id.value,
+                recipe_favorites.c.user_id == user_id.value,
             )
         )
         await self.session.execute(stmt)
 
 
-class RecipeReviewRepository:
+class SqlAlchemyRecipeReviewRepository(RecipeReviewRepository):
     """Repository for recipe review operations."""
 
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    async def exists(self, recipe_id: RecipeId, user_id: UserId) -> bool:
+        """Check if review exists for recipe by user."""
+        stmt = select(
+            select(recipe_reviews.c.recipe_id)
+            .where(
+                and_(
+                    recipe_reviews.c.recipe_id == recipe_id.value,
+                    recipe_reviews.c.user_id == user_id.value,
+                )
+            )
+            .exists()
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar() or False
 
     async def count_by_recipe(self, recipe_id: int) -> int:
         """Count reviews for a recipe."""
@@ -609,9 +629,7 @@ class RecipeReviewRepository:
         result = await self.session.execute(stmt)
         return result.scalar() or 0
 
-    async def save(
-        self, recipe_id: int, user_id: int, rating: int, comment: Optional[str]
-    ) -> None:
+    async def save(self, review: Review) -> None:
         """
         Create or update a review.
 
@@ -621,12 +639,24 @@ class RecipeReviewRepository:
             rating: Rating value
             comment: Optional review comment
         """
-        existing_review = await self._find_by_recipe_and_user(recipe_id, user_id)
+        existing_review = await self._find_by_recipe_and_user(
+            review.recipe_id.value, review.user_id.value
+        )
 
         if existing_review:
-            await self._update(recipe_id, user_id, rating, comment)
+            await self._update(
+                existing_review.id,
+                existing_review.user_id.value,
+                review.rating,
+                review.comment,
+            )
         else:
-            await self._create(recipe_id, user_id, rating, comment)
+            await self._create(
+                review.recipe_id.value,
+                review.user_id.value,
+                review.rating,
+                review.comment,
+            )
 
         await self.session.flush()
 
@@ -640,6 +670,17 @@ class RecipeReviewRepository:
         )
         result = await self.session.execute(stmt)
         return result.first()
+
+    async def delete(self, recipe_id: RecipeId, user_id: UserId) -> None:
+        """Delete a review."""
+        stmt = delete(recipe_reviews).where(
+            and_(
+                recipe_reviews.c.recipe_id == recipe_id.value,
+                recipe_reviews.c.user_id == user_id.value,
+            )
+        )
+        await self.session.execute(stmt)
+        await self.session.flush()
 
     async def _create(
         self, recipe_id: int, user_id: int, rating: int, comment: Optional[str]
