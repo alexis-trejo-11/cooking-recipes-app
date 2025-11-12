@@ -1,0 +1,186 @@
+.header {
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+
+  .nav {
+    max-width: 80rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+
+    @media (min-width: 640px) {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+
+    @media (min-width: 1024px) {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+
+    .nav-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 4rem;
+
+      .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+
+        .logo {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          text-decoration: none;
+
+          .logo-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: linear-gradient(135deg, #f97316, #ef4444);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            .logo-svg {
+              width: 1.5rem;
+              height: 1.5rem;
+              color: #ffffff;
+            }
+          }
+
+          .logo-text {
+            font-weight: 700;
+            font-size: 1.25rem;
+            line-height: 1.75rem;
+            color: #111827;
+          }
+        }
+
+        .nav-links {
+          display: none;
+          align-items: center;
+          gap: 0.25rem;
+
+          @media (min-width: 768px) {
+            display: flex;
+          }
+
+          .nav-link {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            color: #374151;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease-in-out;
+
+            &:hover {
+              color: #dc2626;
+              background-color: #fef2f2;
+            }
+
+            &.active-link {
+              color: #dc2626;
+              background-color: #fef2f2;
+            }
+          }
+        }
+      }
+
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .user-section {
+          display: none;
+          align-items: center;
+          gap: 0.75rem;
+
+          @media (min-width: 768px) {
+            display: flex;
+          }
+
+          .user-greeting {
+            font-size: 0.875rem;
+            color: #4b5563;
+          }
+
+          .logout-btn {
+            padding: 0.5rem 1rem;
+            color: #374151;
+            font-weight: 500;
+            transition: color 0.2s ease-in-out;
+
+            &:hover {
+              color: #dc2626;
+            }
+          }
+        }
+
+        .auth-section {
+          display: none;
+          align-items: center;
+          gap: 0.5rem;
+
+          @media (min-width: 768px) {
+            display: flex;
+          }
+
+          .login-link {
+            padding: 0.5rem 1rem;
+            color: #374151;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.2s ease-in-out;
+
+            &:hover {
+              color: #dc2626;
+            }
+          }
+
+          .signup-btn {
+            padding: 0.5rem 1.25rem;
+            background: linear-gradient(to right, #f97316, #ef4444);
+            color: #ffffff;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease-in-out;
+
+            &:hover {
+              background: linear-gradient(to right, #ea580c, #dc2626);
+            }
+          }
+        }
+
+        .mobile-menu-btn {
+          padding: 0.5rem;
+          color: #374151;
+          border-radius: 0.5rem;
+          transition: background-color 0.2s ease-in-out;
+
+          &:hover {
+            background-color: #f3f4f6;
+          }
+
+          @media (min-width: 768px) {
+            display: none;
+          }
+
+          .menu-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+          }
+        }
+      }
+    }
+  }
+}
