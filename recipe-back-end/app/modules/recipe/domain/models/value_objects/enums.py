@@ -53,9 +53,13 @@ class CuisineType(Enum):
     JAPANESE = "japanese"
     INDIAN = "indian"
     FRENCH = "french"
+    GREEK = "greek"
     MEDITERRANEAN = "mediterranean"
     AMERICAN = "american"
     THAI = "thai"
+    ASIAN = "asian"
+    SPANISH = "spanish"
+    FUSION = "fusion"
     OTHER = "other"
     UNKNOWN = "unknown"
 

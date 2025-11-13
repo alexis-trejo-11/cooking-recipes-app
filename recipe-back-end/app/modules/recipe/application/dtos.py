@@ -43,10 +43,19 @@ class DifficultyLevel(str, Enum):
 class CuisineType(str, Enum):
     ITALIAN = "italian"
     MEXICAN = "mexican"
-    ASIAN = "asian"
-    AMERICAN = "american"
+    CHINESE = "chinese"
+    JAPANESE = "japanese"
+    INDIAN = "indian"
+    FRENCH = "french"
     MEDITERRANEAN = "mediterranean"
+    AMERICAN = "american"
+    THAI = "thai"
+    ASIAN = "asian"
+    GREEK = "greek"
+    SPANISH = "spanish"
+    FUSION = "fusion"
     OTHER = "other"
+    UNKNOWN = "unknown"
 
 
 class MealType(str, Enum):

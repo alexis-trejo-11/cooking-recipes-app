@@ -49,14 +49,14 @@ async def search_recipes(
 async def get_user_recipes(
     use_case: GetUserRecipesUseCaseDep,
     pagination: PaginationParams = Depends(get_pagination_params),
-    # logged_user: User = Depends(get_current_user),
+    logged_user: User = Depends(get_current_user),
 ) -> RecipePageResponse:
     """
     Get paginated list of recipes created by the current user.
     - **page**: Page number
     - **page_size**: Page size
     """
-    return await use_case.execute(UserId(1), pagination)
+    return await use_case.execute(logged_user.id, pagination)
 
 
 @router.post(
@@ -139,7 +139,7 @@ async def update_recipe(
     - **steps**: Optional updated steps list
     - **tags**: Optional updated tags
     """
-    result = await use_case.execute(RecipeId(recipe_id), request, UserId(1))
+    result = await use_case.execute(RecipeId(recipe_id), request, logged_user.id)
     return result
 
 

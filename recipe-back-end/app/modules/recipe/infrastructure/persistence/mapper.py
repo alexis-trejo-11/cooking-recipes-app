@@ -87,7 +87,7 @@ class RecipeMapper:
             cooking_time=RecipeMapper._map_cooking_time(recipe_model),
             nutritional_info=RecipeMapper._map_nutritional_info(recipe_model),
             rating_sum=rating_sum or 0,
-            rating_count=rating_count or 0,
+            review_count=rating_count or 0,
             view_count=view_count or 0,
             favorite_count=favorite_count or 0,
             version=recipe_model.version or 1,
@@ -147,7 +147,7 @@ class RecipeMapper:
                 else None
             ),
             "rating_sum": recipe.rating_sum,
-            "rating_count": recipe.rating_count,
+            "review_count": recipe.review_count,
             "view_count": recipe.view_count,
             "favorite_count": recipe.favorite_count,
             "version": recipe.version,
