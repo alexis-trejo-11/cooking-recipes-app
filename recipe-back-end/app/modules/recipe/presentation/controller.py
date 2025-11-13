@@ -88,7 +88,7 @@ async def create_recipe(
     - **cook_time_minutes**: Cooking time in minutes
     - **nutritional_info**: Optional nutritional information
     """
-    result = await use_case.execute(request, logged_user.user_id)
+    result = await use_case.execute(request, logged_user.id)
     return result
 
 
@@ -181,7 +181,7 @@ async def delete_review(
 
     - **recipe_id**: Recipe identifier
     """
-    await use_case.execute(RecipeId(recipe_id), logged_user.user_id)
+    await use_case.execute(RecipeId(recipe_id), logged_user.id)
 
 
 @router.patch(
@@ -200,7 +200,7 @@ async def toggle_favorite(
 
     - **recipe_id**: Recipe identifier
     """
-    added = await use_case.execute(RecipeId(recipe_id), logged_user.user_id)
+    added = await use_case.execute(RecipeId(recipe_id), logged_user.id)
     if added:
         return {"message": "Recipe added to favorites"}
 
@@ -244,4 +244,4 @@ async def delete_recipe(
 
     - **recipe_id**: Recipe identifier
     """
-    await use_case.execute(RecipeId(recipe_id), logged_user.user_id)
+    await use_case.execute(RecipeId(recipe_id), logged_user.id)

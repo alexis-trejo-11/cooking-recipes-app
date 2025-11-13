@@ -18,13 +18,13 @@ class MockUserRepository(UserRepository):
         return self._users.get(user_id) if user_id else None
 
     async def save(self, user: User) -> User:
-        if not user.user_id:
+        if not user.id:
             # Generate new ID for new users
             new_id = UserId(len(self._users) + 1)
             user._user_id = new_id
 
-        self._users[user.user_id] = user
-        self._email_index[user.email.lower()] = user.user_id
+        self._users[user.id] = user
+        self._email_index[user.email.lower()] = user.id
         return user
 
     async def delete(self, user_id: UserId) -> bool:

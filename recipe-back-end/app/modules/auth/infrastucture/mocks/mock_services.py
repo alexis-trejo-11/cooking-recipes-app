@@ -29,7 +29,7 @@ class MockTokenService(TokenService):
 
     async def create_access_token(self, user: User) -> str:
         payload = {
-            "sub": str(user.user_id),
+            "sub": str(user.id),
             "email": user.email,
             "roles": [role.value for role in user.roles],
             "exp": datetime.now(timezone.utc) + timedelta(hours=24),

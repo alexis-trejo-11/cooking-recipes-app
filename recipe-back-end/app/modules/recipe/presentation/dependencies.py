@@ -27,6 +27,7 @@ from app.modules.recipe.application.use_cases import (
     GetUserRecipesUseCase,
     UpdateRecipeUseCase,
     DeleteRecipeUseCase,
+    GetRecipeFavoritesByUserUseCase,
     CreateRecipeUseCaseImpl,
     CreateReviewUseCaseImpl,
     DeleteReviewUseCaseImpl,
@@ -38,6 +39,7 @@ from app.modules.recipe.application.use_cases import (
     SearchRecipesUseCaseImpl,
     GetUserRecipesUseCaseImpl,
     ToggleFavoriteUseCaseImpl,
+    GetRecipeFavoritesByUserUseCaseImpl,
 )
 from app.modules.recipe.application.dtos import RecipeSearchRequest
 from app.modules.auth.presentation.app_depencies import UserRepositoryDep
@@ -186,6 +188,18 @@ async def get_get_user_recipes_use_case(
     return GetUserRecipesUseCaseImpl(recipe_repository)
 
 
+async def get_get_recipe_favorites_by_user_use_case(
+    recipe_repository: Annotated[RecipeRepository, Depends(get_recipe_repository)],
+    recipe_favorite_repository: Annotated[
+        RecipeFavoriteRepository, Depends(get_recipe_favorite_repository)
+    ],
+) -> GetRecipeFavoritesByUserUseCase:
+    """
+    Dependency for GetRecipeFavoritesByUserUseCase.
+    """
+    return GetRecipeFavoritesByUserUseCaseImpl(recipe_repository)
+
+
 async def get_restore_recipe_use_case(
     recipe_repository: Annotated[RecipeRepository, Depends(get_recipe_repository)],
 ) -> RestoreRecipeUseCase:
@@ -279,6 +293,10 @@ RestoreRecipeUseCaseDep = Annotated[
 # Query Use Case Dependencies
 GetUserRecipesUseCaseDep = Annotated[
     GetUserRecipesUseCase, Depends(get_get_user_recipes_use_case)
+]
+
+GetRecipeFavoritesByUserUseCaseDep = Annotated[
+    GetRecipeFavoritesByUserUseCase, Depends(get_get_recipe_favorites_by_user_use_case)
 ]
 
 GetRecipeUseCaseDep = Annotated[GetRecipeUseCase, Depends(get_get_recipe_use_case)]

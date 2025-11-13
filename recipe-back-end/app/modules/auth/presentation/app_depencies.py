@@ -3,6 +3,10 @@ from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator, Annotated
 from app.modules.auth.application.auth_use_cases import SignUpUseCase, LoginUseCase
+from app.modules.auth.application.user_use_cases import (
+    UpdateUserProfileUseCase,
+    GetUserProfileUseCase,
+)
 from app.modules.auth.domain.interfaces import (
     UserRepository,
     TokenService,
@@ -98,7 +102,34 @@ def get_login_use_case(
     )
 
 
+def get_update_user_profile_use_case(
+    user_repository: Annotated[UserRepository, Depends(get_user_repository)],
+) -> UpdateUserProfileUseCase:
+    """
+    Dependency for UpdateUserProfileUseCase.
+    Injects all required dependencies.
+    """
+    return UpdateUserProfileUseCase(user_repository=user_repository)
+
+
+def get_get_user_profile_use_case(
+    user_repository: Annotated[UserRepository, Depends(get_user_repository)],
+) -> GetUserProfileUseCase:
+    """
+    Dependency for GetUserProfileUseCase.
+    Injects all required dependencies.
+    """
+    return GetUserProfileUseCase(user_repository=user_repository)
+
+
 # Application dependencies
+GetUserProfileUseCaseDep = Annotated[
+    GetUserProfileUseCase, Depends(get_get_user_profile_use_case)
+]
+UpdateUserProfileUseCaseDep = Annotated[
+    UpdateUserProfileUseCase, Depends(get_update_user_profile_use_case)
+]
+
 UserRepositoryDep = Annotated[UserRepository, Depends(get_user_repository)]
 PasswordHasherDep = Annotated[PasswordHasher, Depends(get_password_hasher)]
 TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]

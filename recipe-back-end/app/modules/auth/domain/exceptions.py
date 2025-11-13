@@ -1,10 +1,5 @@
 from typing import Optional, List, Dict, Any
-
-
-class UserException(Exception):
-    """Base exception for all user-related errors."""
-
-    pass
+from app.utils.core.exceptions.modules import UserException
 
 
 class UserValidationException(UserException):

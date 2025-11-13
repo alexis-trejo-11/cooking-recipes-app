@@ -31,7 +31,7 @@ class JWTTokenService(TokenService):
         issued_at = datetime.now(timezone.utc)
 
         payload = {
-            "sub": str(user.user_id.value),
+            "sub": str(user.id.value),
             "email": user.email,
             "roles": [role.value for role in user.roles],
             "exp": expiration_time,

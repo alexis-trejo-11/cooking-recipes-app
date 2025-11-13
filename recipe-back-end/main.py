@@ -11,6 +11,7 @@ from app.config.global_exception_handler import (
     RateLimitException,
 )
 from app.modules.recipe.presentation.controller import router as recipe_router
+from app.modules.auth.presentation.user_controller import router as user_router
 from app.modules.auth.presentation.auth_controller import router as auth_router
 
 
@@ -111,6 +112,7 @@ async def rate_limit_status():
 
 app.include_router(auth_router, dependencies=[Depends(rate_limiter_dependency)])
 app.include_router(recipe_router, dependencies=[Depends(rate_limiter_dependency)])
+app.include_router(user_router, dependencies=[Depends(rate_limiter_dependency)])
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True, log_config=None)

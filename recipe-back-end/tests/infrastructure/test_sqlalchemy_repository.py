@@ -52,12 +52,12 @@ class TestSQLAlchemyUserRepository:
         saved_user = await repository.save(sample_user)
 
         # Retrieve user
-        retrieved_user = await repository.get_by_id(saved_user.user_id)
+        retrieved_user = await repository.get_by_id(saved_user.id)
 
         assert retrieved_user is not None
         assert retrieved_user.email == sample_user.email
         assert retrieved_user.first_name == sample_user.first_name
-        assert retrieved_user.user_id.value == saved_user.user_id.value
+        assert retrieved_user.id.value == saved_user.id.value
 
     @pytest.mark.asyncio
     async def test_get_by_email(self, db_session, sample_user):
@@ -107,7 +107,7 @@ class TestSQLAlchemyUserRepository:
         updated_user = await repository.save(saved_user)
 
         # Retrieve and verify
-        retrieved_user = await repository.get_by_id(saved_user.user_id)
+        retrieved_user = await repository.get_by_id(saved_user.id)
 
         assert retrieved_user.first_name == "Jane"
         assert retrieved_user.last_name == "Smith"
@@ -125,11 +125,11 @@ class TestSQLAlchemyUserRepository:
         assert user_exists is True
 
         # Delete user
-        deleted = await repository.delete(saved_user.user_id)
+        deleted = await repository.delete(saved_user.id)
         assert deleted is True
 
         # Verify user is gone
-        retrieved_user = await repository.get_by_id(saved_user.user_id)
+        retrieved_user = await repository.get_by_id(saved_user.id)
         assert retrieved_user is None
 
         exists = await repository.exists_by_email(saved_user.email)
@@ -179,7 +179,7 @@ class TestSQLAlchemyUserRepository:
         )
 
         saved_user = await repository.save(user)
-        retrieved_user = await repository.get_by_id(saved_user.user_id)
+        retrieved_user = await repository.get_by_id(saved_user.id)
 
         assert UserRole.ADMIN in retrieved_user.roles
         assert UserRole.MODERATOR in retrieved_user.roles

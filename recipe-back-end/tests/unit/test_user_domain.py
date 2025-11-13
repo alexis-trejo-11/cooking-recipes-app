@@ -177,7 +177,7 @@ class TestUserReconstruction:
         """Test successful user reconstruction from persisted data."""
         user = User.reconstruct(sample_persisted_user_data)
 
-        assert user.user_id == UserId(1)
+        assert user.id == UserId(1)
         assert user.first_name == "Jane"
         assert user.last_name == "Smith"
         assert user.email == "jane.smith@example.com"

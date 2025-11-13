@@ -18,6 +18,12 @@ class UserModel(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password: Mapped[str] = mapped_column(String(255))
     phone_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    date_of_birth: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    gender: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    bio: Mapped[str] = mapped_column(Text, default="")
+    profile_picture_url: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True
+    )
     is_active: Mapped[bool] = mapped_column(default=True)
     joined_at: Mapped[datetime] = mapped_column(server_default=func.now())
     last_login: Mapped[Optional[datetime]] = mapped_column(nullable=True)

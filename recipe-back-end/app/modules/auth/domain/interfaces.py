@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any
-from .user import User, UserId
+from .user import User, UserId, UserRecipeStats
 
 
 class UserRepository(ABC):
     """Abstract base class for User repository"""
 
     @abstractmethod
-    async def get_by_id(self, user_id: UserId) -> Optional[User]:
+    async def get_by_id(self, id: UserId) -> Optional[User]:
         """Get user by ID"""
         pass
 
@@ -22,7 +22,7 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
-    async def delete(self, user_id: UserId) -> bool:
+    async def delete(self, id: UserId) -> bool:
         """Delete user by ID"""
         pass
 
@@ -37,8 +37,13 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
-    async def exists_by_id(self, user_id: UserId) -> bool:
-        """Check if user exists by user_id"""
+    async def exists_by_id(self, id: UserId) -> bool:
+        """Check if user exists by id"""
+        pass
+
+    @abstractmethod
+    async def get_recipe_stats(self, id: UserId) -> UserRecipeStats:
+        """Get user statistics"""
         pass
 
 

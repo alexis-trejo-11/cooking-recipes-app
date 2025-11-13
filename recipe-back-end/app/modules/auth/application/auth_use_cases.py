@@ -1,4 +1,3 @@
-from typing import Optional
 from .dtos import (
     SignUpRequest,
     LoginRequest,
@@ -10,7 +9,7 @@ from app.modules.auth.domain.interfaces import (
     PasswordHasher,
     TokenService,
 )
-from app.modules.auth.domain.user import User, UserRole
+from app.modules.auth.domain.user import User, UserRole, UserGender
 from app.modules.auth.domain.exceptions import UserCreationException
 from .exceptions import (
     UserAlreadyExistsException,
@@ -47,6 +46,8 @@ class SignUpUseCase:
                 raw_password=request.password,
                 phone_number=request.phone_number,
                 roles=[UserRole.COMMON_USER],
+                gender=UserGender(request.gender),
+                date_of_birth=request.date_of_birth,
             )
 
             hashed_password = await self.password_hasher.hash_password(request.password)
@@ -56,15 +57,7 @@ class SignUpUseCase:
 
             access_token = await self.token_service.create_access_token(saved_user)
 
-            return AuthResponse(
-                access_token=access_token,
-                user_id=str(saved_user.user_id),
-                email=saved_user.email,
-                first_name=saved_user.first_name,
-                last_name=saved_user.last_name,
-                roles=[role.value for role in saved_user.roles],
-            )
-
+            return AuthResponse(access_token=access_token, user_id=str(saved_user.id))
         except UserCreationException as e:
             raise InvalidCredentialsException(f"Invalid user data: {str(e)}") from e
 
@@ -103,14 +96,7 @@ class LoginUseCase:
 
         access_token = await self.token_service.create_access_token(user)
 
-        return AuthResponse(
-            access_token=access_token,
-            user_id=str(user.user_id),
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            roles=[role.value for role in user.roles],
-        )
+        return AuthResponse(access_token=access_token, user_id=str(user.id))
 
 
 class GetCurrentUserUseCase:
@@ -129,7 +115,7 @@ class GetCurrentUserUseCase:
             raise UserNotFoundException("User not found")
 
         return UserResponse(
-            user_id=str(user.user_id),
+            user_id=str(user.id),
             first_name=user.first_name,
             last_name=user.last_name,
             email=user.email,

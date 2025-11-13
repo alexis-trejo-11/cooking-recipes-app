@@ -45,6 +45,7 @@ from app.modules.recipe.infrastructure.persistence.specification_builder import 
     RecipeSpecificationBuilder,
     Specification,
 )
+from app.utils.core.pagination import Page, PaginationParams
 
 logger = logging.getLogger("app.modules.recipe")
 
@@ -172,6 +173,14 @@ class GetRecipeUseCaseImpl(GetRecipeUseCase):
             raise RecipeNotFoundException(recipe_id)
 
         return RecipeResponse.from_recipe(recipe)
+
+
+class GetRecipeFavoritesByUserUseCase(ABC):
+    @abstractmethod
+    async def execute(
+        self, user_id: UserId, page_request: PaginationParams
+    ) -> Page[RecipeSummaryResponse]:
+        pass
 
 
 class GetUserRecipesUseCaseImpl(GetUserRecipesUseCase):
@@ -439,6 +448,21 @@ class DeleteRecipeUseCaseImpl(DeleteRecipeUseCase):
         logger.info(f"Recipe found for delete: {recipe.id}")
 
         return recipe
+
+
+class GetRecipeFavoritesByUserUseCaseImpl(GetRecipeFavoritesByUserUseCase):
+    def __init__(self, recipe_repository: RecipeRepository) -> None:
+        self.recipe_repository = recipe_repository
+
+    async def execute(
+        self, user_id: UserId, page_request: PaginationParams
+    ) -> Page[RecipeSummaryResponse]:
+        logger.info(f"Fetching favorite recipes for user_id: {user_id}")
+
+        recipe_page = await self.recipe_repository.find_favorites_by_user_id(
+            user_id, page_request
+        )
+        return recipe_page.map(RecipeSummaryResponse.from_recipe)
 
 
 class ToggleFavoriteUseCaseImpl(ToggleFavoriteUseCase):

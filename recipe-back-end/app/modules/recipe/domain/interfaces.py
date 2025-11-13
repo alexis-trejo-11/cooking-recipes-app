@@ -59,6 +59,22 @@ class RecipeRepository(ABC):
         pass
 
     @abstractmethod
+    async def find_favorites_by_user_id(
+        self,
+        user_id: UserId,
+        page_request: PaginationParams,
+    ) -> Page[Recipe]:
+        """
+        Find favorite recipes by user with pagination.
+        Args:
+            user_id: User identifier
+            page_request: Pagination parameters
+        Returns:
+            Paginated list of favorite recipes by the user
+        """
+        pass
+
+    @abstractmethod
     async def search(
         self, spec: Specification, page_request: PaginationParams
     ) -> Page[Recipe]:

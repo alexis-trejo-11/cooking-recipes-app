@@ -102,6 +102,44 @@ class SqlAlchemyRecipeRepository(RecipeRepository):
 
         return self.mapper.model_to_entity(recipe_model)
 
+    async def find_favorites_by_user_id(
+        self,
+        user_id: UserId,
+        page_request: PaginationParams,
+    ) -> Page[Recipe]:
+        favorites_subquery = (
+            select(recipe_favorites.c.recipe_id)
+            .where(recipe_favorites.c.user_id == user_id.value)
+            .subquery()
+        )
+
+        stmt = select(RecipeModel).join(
+            favorites_subquery, RecipeModel.id == favorites_subquery.c.recipe_id
+        )
+
+        count_stmt = select(func.count()).select_from(favorites_subquery)
+        total_result = await self.session.execute(count_stmt)
+        total = total_result.scalar_one()
+
+        if total == 0:
+            return Page.empty()
+
+        # Aplicar ordenamiento y paginación
+        stmt = self._apply_sorting(stmt, page_request)
+        stmt = self._apply_pagination(stmt, page_request)
+        stmt = self._apply_relationship_loading(stmt)
+
+        result = await self.session.execute(stmt)
+        recipe_models = result.scalars().all()
+
+        recipes = [self.mapper.model_to_entity(model) for model in recipe_models]
+        return Page(
+            items=recipes,
+            total=total,
+            page=page_request.page,
+            size=page_request.size,
+        )
+
     async def search(
         self, spec: Specification, page_request: PaginationParams
     ) -> Page[Recipe]:

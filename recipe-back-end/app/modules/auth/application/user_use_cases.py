@@ -1,5 +1,5 @@
 from typing import List, Optional
-from .dtos import UserResponse, UpdateUserRequest
+from .dtos import UserProfileResponse, UpdateUserProfileRequest, UserResponse
 from app.modules.auth.domain.interfaces import UserRepository
 from app.modules.auth.application.exceptions import (
     UserNotFoundException,
@@ -8,33 +8,20 @@ from app.modules.auth.application.exceptions import (
 from app.modules.auth.domain.user import User, UserRole, UserId
 
 
-class GetUserUseCase:
+class GetUserProfileUseCase:
     """Use case to get user by ID"""
 
     def __init__(self, user_repository: UserRepository):
         self.user_repository = user_repository
 
-    async def execute(self, user_id: UserId) -> UserResponse:
+    async def execute(self, user: User) -> UserProfileResponse:
         """Execute get user by ID"""
+        stats = await self.user_repository.get_recipe_stats(user.id)
 
-        user = await self.user_repository.get_by_id(user_id)
-        if not user:
-            raise UserNotFoundException(f"User with ID {user_id} not found")
-
-        return UserResponse(
-            user_id=str(user.user_id),
-            first_name=user.first_name,
-            last_name=user.last_name,
-            email=user.email,
-            phone_number=user.phone_number,
-            roles=[role.value for role in user.roles],
-            is_active=user.is_active,
-            joined_at=user.joined_at,
-            last_login=user.last_login,
-        )
+        return UserProfileResponse.from_user_and_stats(user, stats)
 
 
-class UpdateUserUseCase:
+class UpdateUserProfileUseCase:
     """Use case to update user"""
 
     def __init__(self, user_repository: UserRepository):
@@ -43,8 +30,8 @@ class UpdateUserUseCase:
     async def execute(
         self,
         user_id: UserId,
-        request: UpdateUserRequest,
-    ) -> UserResponse:
+        request: UpdateUserProfileRequest,
+    ) -> None:
         """Execute user update"""
         user = await self.user_repository.get_by_id(user_id)
         if not user:
@@ -58,19 +45,7 @@ class UpdateUserUseCase:
         if request.phone_number is not None:
             user.update_phone_number(request.phone_number)
 
-        updated_user = await self.user_repository.save(user)
-
-        return UserResponse(
-            user_id=str(updated_user.user_id),
-            first_name=updated_user.first_name,
-            last_name=updated_user.last_name,
-            email=updated_user.email,
-            phone_number=updated_user.phone_number,
-            roles=[role.value for role in updated_user.roles],
-            is_active=updated_user.is_active,
-            joined_at=updated_user.joined_at,
-            last_login=updated_user.last_login,
-        )
+        await self.user_repository.save(user)
 
 
 class ListUsersUseCase:
@@ -94,7 +69,7 @@ class ListUsersUseCase:
 
         return [
             UserResponse(
-                user_id=str(user.user_id),
+                user_id=str(user.id),
                 first_name=user.first_name,
                 last_name=user.last_name,
                 email=user.email,
@@ -118,13 +93,6 @@ class DeleteUserUseCase:
         self, user_id: UserId, current_user_id: Optional[UserId] = None
     ) -> bool:
         """Execute user deletion"""
-
-        # Authorization: users can only delete their own account or admin can delete any
-        if current_user_id and current_user_id != user_id:
-            current_user = await self.user_repository.get_by_id(current_user_id)
-            if not current_user or UserRole.ADMIN not in current_user.roles:
-                raise AuthorizationException("Not authorized to delete this user")
-
         user = await self.user_repository.get_by_id(user_id)
         if not user:
             raise UserNotFoundException(f"User with ID {user_id} not found")
@@ -145,22 +113,10 @@ class ChangeUserRoleUseCase:
 
     async def execute(
         self, user_id: UserId, new_roles: List[UserRole], current_user_id: UserId
-    ) -> UserResponse:
+    ) -> None:
         """Execute role change"""
         user = await self.user_repository.get_by_id(user_id)
         if not user:
             raise UserNotFoundException(f"User with ID {user_id} not found")
         user._roles = new_roles
-        updated_user = await self.user_repository.save(user)
-
-        return UserResponse(
-            user_id=str(updated_user.user_id),
-            first_name=updated_user.first_name,
-            last_name=updated_user.last_name,
-            email=updated_user.email,
-            phone_number=updated_user.phone_number,
-            roles=[role.value for role in updated_user.roles],
-            is_active=updated_user.is_active,
-            joined_at=updated_user.joined_at,
-            last_login=updated_user.last_login,
-        )
+        await self.user_repository.save(user)

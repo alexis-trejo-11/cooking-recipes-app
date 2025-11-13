@@ -2,10 +2,21 @@ from typing import Optional, List
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.auth.domain.interfaces import UserRepository
-from app.modules.auth.domain.user import User, UserRole, UserId
+from app.modules.auth.domain.user import (
+    User,
+    UserGender,
+    UserRole,
+    UserId,
+    UserRecipeStats,
+)
 from app.modules.auth.infrastucture.persitence.models import UserModel
 from app.modules.auth.application.exceptions import UserNotFoundException
 import json
+from app.modules.recipe.infrastructure.persistence.models import (
+    recipe_favorites,
+    recipe_reviews,
+    RecipeModel,
+)
 
 
 class SQLAlchemyUserRepository(UserRepository):
@@ -14,8 +25,8 @@ class SQLAlchemyUserRepository(UserRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_by_id(self, user_id: UserId) -> Optional[User]:
-        stmt = select(UserModel).where(UserModel.id == user_id.value)
+    async def get_by_id(self, id: UserId) -> Optional[User]:
+        stmt = select(UserModel).where(UserModel.id == id.value)
         result = await self.session.execute(stmt)
         user_model = result.scalar_one_or_none()
 
@@ -36,7 +47,7 @@ class SQLAlchemyUserRepository(UserRepository):
 
     async def save(self, user: User) -> User:
         """Save user (create or update)"""
-        if user.user_id and not user.user_id.is_zero():  # Update existing user
+        if user.id and not user.id.is_zero():  # Update existing user
             return await self._update(user)
         else:  # Create new user
             return await self._create(user)
@@ -47,6 +58,10 @@ class SQLAlchemyUserRepository(UserRepository):
             first_name=user.first_name,
             last_name=user.last_name,
             email=user.email,
+            date_of_birth=user.date_of_birth,
+            gender=user.gender.value,
+            profile_picture_url=user.profile_picture_url,
+            bio=user.bio,
             password=user.password,
             phone_number=user.phone_number,
             is_active=user.is_active,
@@ -66,12 +81,16 @@ class SQLAlchemyUserRepository(UserRepository):
     async def _update(self, user: User) -> User:
         stmt = (
             update(UserModel)
-            .where(UserModel.id == user.user_id.value)
+            .where(UserModel.id == user.id.value)
             .values(
                 first_name=user.first_name,
                 last_name=user.last_name,
                 email=user.email,
                 password=user.password,
+                date_of_birth=user.date_of_birth,
+                gender=user.gender.value,
+                profile_picture_url=user.profile_picture_url,
+                bio=user.bio,
                 phone_number=user.phone_number,
                 is_active=user.is_active,
                 last_login=user.last_login,
@@ -83,13 +102,13 @@ class SQLAlchemyUserRepository(UserRepository):
         await self.session.commit()
 
         if result.rowcount == 0:
-            raise UserNotFoundException(f"User with ID {user.user_id} not found")
+            raise UserNotFoundException(f"User with ID {user.id} not found")
 
         return user
 
-    async def delete(self, user_id: UserId) -> bool:
+    async def delete(self, id: UserId) -> bool:
         """Delete user by ID"""
-        stmt = delete(UserModel).where(UserModel.id == user_id.value)
+        stmt = delete(UserModel).where(UserModel.id == id.value)
         result = await self.session.execute(stmt)
         await self.session.commit()
         return result.rowcount > 0
@@ -108,10 +127,37 @@ class SQLAlchemyUserRepository(UserRepository):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none() is not None
 
-    async def exists_by_id(self, user_id: UserId) -> bool:
-        stmt = select(UserModel.id).where(UserModel.id == user_id.value)
+    async def exists_by_id(self, id: UserId) -> bool:
+        stmt = select(UserModel.id).where(UserModel.id == id.value)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none() is not None
+
+    async def get_recipe_stats(self, id: UserId) -> UserRecipeStats:
+        """Get user recipe statistics"""
+        # Count favorite recipes
+        fav_stmt = select(recipe_favorites.c.user_id).where(
+            recipe_favorites.c.user_id == id.value
+        )
+        fav_result = await self.session.execute(fav_stmt)
+        favorite_count = len(fav_result.fetchall())
+
+        # Count reviewed recipes
+        rev_stmt = select(recipe_reviews.c.user_id).where(
+            recipe_reviews.c.user_id == id.value
+        )
+        rev_result = await self.session.execute(rev_stmt)
+        reviewed_count = len(rev_result.fetchall())
+
+        # Count created recipes
+        create_stmt = select(RecipeModel).where(RecipeModel.author_id == id.value)
+        create_result = await self.session.execute(create_stmt)
+        created_count = len(create_result.scalars().all())
+
+        return UserRecipeStats(
+            favorite_recipes_count=favorite_count,
+            reviewed_recipes_count=reviewed_count,
+            created_recipes_count=created_count,
+        )
 
     def _to_entity(self, user_model: UserModel) -> User:
         """Convert SQLAlchemy model to domain entity"""
@@ -125,12 +171,20 @@ class SQLAlchemyUserRepository(UserRepository):
 
         return User.reconstruct(
             {
-                "user_id": UserId(user_model.id),
+                "id": UserId(user_model.id),
                 "first_name": user_model.first_name,
                 "last_name": user_model.last_name,
                 "email": user_model.email,
                 "password": user_model.password,
                 "phone_number": user_model.phone_number,
+                "date_of_birth": user_model.date_of_birth,
+                "profile_picture_url": user_model.profile_picture_url,
+                "bio": user_model.bio,
+                "gender": (
+                    UserGender(user_model.gender)
+                    if user_model.gender
+                    else UserGender.UNKNOWN
+                ),
                 "roles": roles,
                 "joined_at": user_model.joined_at,
                 "last_login": user_model.last_login,
