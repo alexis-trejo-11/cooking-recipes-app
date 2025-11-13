@@ -3,7 +3,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { RecipeService } from '../recipes/recipe.service';
+import { RecipeService } from '../../../services/recipe.service';
 import { Ingredient, Recipe } from '../../../models/recipe_models';
 
 interface RecipeStat {

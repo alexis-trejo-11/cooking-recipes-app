@@ -6,7 +6,7 @@ import {
   Recipe,
   getDummyDetailedRecipe,
   RecipeSummary,
-} from '../../../models/recipe_models';
+} from '../models/recipe_models';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 

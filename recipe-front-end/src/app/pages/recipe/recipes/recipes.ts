@@ -3,7 +3,7 @@ import { RecipeCard } from '../../../shared/recipe-card/recipe-card';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RecipeSummary } from '../../../models/recipe_models';
-import { RecipeService } from './recipe.service';
+import { RecipeService } from '../../../services/recipe.service';
 
 interface SearchFilters {
   query: string;
