@@ -12,3 +12,8 @@ export interface SignupRequest {
   gender?: 'male' | 'female' | 'other';
   dateOfBirth?: string;
 }
+
+export interface User {
+  id: number;
+  name: string;
+}

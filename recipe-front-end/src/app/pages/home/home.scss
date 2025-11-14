@@ -1,6 +1,6 @@
 .home-container {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #fff7ed, white);
+  background-color: var(--bg-primary);
 
   .hero-section {
     position: relative;
@@ -26,13 +26,17 @@
     .hero-title {
       font-size: 3rem;
       font-weight: 700;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      line-height: 1.2;
       animation: fade-in 1s ease-in;
 
       @media (min-width: 768px) {
-        font-size: 1.5rem;
+        font-size: 4.5rem;
+        line-height: 1.1;
+        margin-bottom: 2.5rem;
       }
     }
+
     .hero-subtitle {
       font-size: 1.25rem;
       margin-bottom: 3rem;
@@ -52,7 +56,7 @@
       left: 0;
       right: 0;
       height: 4rem;
-      background: linear-gradient(to top, white, transparent);
+      background: linear-gradient(to top, var(--bg-primary), transparent);
     }
   }
   // End of .hero-section
@@ -72,16 +76,21 @@
         grid-template-columns: repeat(2, 1fr);
       }
 
+      @media (min-width: 1024px) {
+        grid-template-columns: repeat(3, 1fr);
+      }
 
       .feature-card {
-        background: white;
+        background: var(--bg-secondary);
         padding: 2rem;
         border-radius: 1rem;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        transition: box-shadow 0.3s ease;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
 
         &:hover {
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+          transform: translateY(-2px);
         }
 
         .feature-icon {
@@ -126,12 +135,13 @@
         .feature-title {
           font-size: 1.5rem;
           font-weight: 700;
-          color: #1f2937;
+          color: var(--text-primary);
           margin-bottom: 0.75rem;
         }
 
         .feature-description {
-          color: #4b5563;
+          color: var(--text-secondary);
+          line-height: 1.6;
         }
       }
       // End of .feature-card
@@ -147,31 +157,34 @@
         justify-content: space-between;
         margin-bottom: 2rem;
 
-      .section-title {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #1f2937;
-      }
-
-      .view-all-link {
-        color: #ea580c;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap : 0.5rem;
-
-        &:hover {
-          color: #c2410c;
+        .section-title {
+          font-size: 2rem;
+          font-weight: 700;
+          color: var(--text-primary);
         }
 
-        .link-icon {
-          width: 1.25rem;
-          height: 1.25rem;
+        .view-all-link {
+          color: var(--primary-color);
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          text-decoration: none;
+          transition: color 0.2s ease-in-out;
+
+          &:hover {
+            color: var(--primary-hover);
+          }
+
+          .link-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+          }
         }
+        // End of .view-all-links
       }
-      // End of .view-all-links
-      }
-    // End of .section-header
+      // End of .section-header
+
       .recipes-grid {
         display: grid;
         grid-template-columns: 1fr;
@@ -186,23 +199,24 @@
         }
 
         .recipe-skeleton {
-          background: #e5e7eb;
+          background: var(--border-color);
           border-radius: 1rem;
           height: 24rem;
           animation: pulse 2s infinite;
         }
       }
       // End of .recipes-grid
+
       .no-recipes {
         font-size: 1.25rem;
         text-align: center;
-        color: #6b7280;
+        color: var(--text-muted);
         padding: 3rem 0;
       }
     }
     // End of .recipes-section
   }
-// End of .content-section
+  // End of .content-section
 }
 
 @keyframes fade-in {
@@ -217,7 +231,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

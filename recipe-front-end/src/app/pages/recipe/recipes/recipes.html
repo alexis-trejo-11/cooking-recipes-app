@@ -55,15 +55,15 @@
       <div class="recipe-skeleton"></div>
       }
     </div>
-    } @else if (recipes().length > 0) {
+    } @else if (page().recipes) {
     <div class="results-info">
-      <p class="results-count">Found {{ recipes().length }} recipes</p>
+      <p class="results-count">Found {{ page().recipes.length }} recipes</p>
       @if (hasActiveFilters()) {
       <span class="active-filters-badge">Filtered</span>
       }
     </div>
     <div class="recipes-grid">
-      @for (recipe of recipes(); track recipe.id) {
+      @for (recipe of page().recipes; track recipe.id) {
       <app-recipe-card [recipe]="recipe" />
       }
     </div>

@@ -1,4 +1,3 @@
-// src/app/pages/recipe-detail/recipe-detail.component.ts
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -64,14 +63,15 @@ export class RecipeDetail implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
+    console.log('Recipe ID from route:', id);
     if (id) {
-      this.loadRecipe(id);
+      this.loadRecipe(+id);
     }
   }
 
-  loadRecipe(id: string): void {
-    this.recipeService.getRecipeById(id).subscribe({
-      next: (recipe) => {
+  loadRecipe(id: number): void {
+    this.recipeService.getRecipesById(id).subscribe({
+      next: (recipe: Recipe) => {
         this.recipe.set(recipe);
         this.scaledServings.set(recipe.servings || 1);
         this.loading.set(false);

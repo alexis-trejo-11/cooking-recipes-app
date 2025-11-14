@@ -37,6 +37,15 @@ export class RecipeCard {
       [CuisineType.ASIAN]: 'Asian',
       [CuisineType.AMERICAN]: 'American',
       [CuisineType.MEDITERRANEAN]: 'Mediterranean',
+      [CuisineType.CHINESE]: 'Chinese',
+      [CuisineType.INDIAN]: 'Indian',
+      [CuisineType.FRENCH]: 'French',
+      [CuisineType.JAPANESE]: 'Japanese',
+      [CuisineType.THAI]: 'Thai',
+      [CuisineType.SPANISH]: 'Spanish',
+      [CuisineType.GREEK]: 'Greek',
+      [CuisineType.FUSION]: 'Fusion',
+      [CuisineType.UNKNOWN]: 'Unknown',
       [CuisineType.OTHER]: 'Other',
     };
     return texts[cuisine] || 'Other';

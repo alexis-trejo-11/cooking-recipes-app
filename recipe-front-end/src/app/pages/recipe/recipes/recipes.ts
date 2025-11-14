@@ -2,7 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { RecipeCard } from '../../../shared/recipe-card/recipe-card';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RecipeSummary } from '../../../models/recipe_models';
+import { RecipeSummaryPage } from '../../../models/recipe_models';
 import { RecipeService } from '../../../services/recipe.service';
 
 interface SearchFilters {
@@ -32,7 +32,10 @@ interface FilterConfig {
 export class Recipes implements OnInit {
   private recipeService = inject(RecipeService);
 
-  recipes = signal<RecipeSummary[]>([]);
+  page = signal<RecipeSummaryPage>({
+    recipes: [],
+    pagination: { total_items: 0, total_pages: 0, current_page: 0, page_size: 0 },
+  });
   loading = signal(true);
   filters: SearchFilters = {
     query: '',
@@ -96,9 +99,11 @@ export class Recipes implements OnInit {
 
   loadRecipes(): void {
     this.loading.set(true);
+    console.log('Loading recipes...');
     this.recipeService.getAllRecipes().subscribe({
       next: (recipes) => {
-        this.recipes.set(recipes);
+        console.log('Recipes loaded:', recipes);
+        this.page.set(recipes);
         this.loading.set(false);
       },
       error: (err: any) => {

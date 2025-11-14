@@ -1,5 +1,4 @@
 import { Component, signal } from '@angular/core';
-import { RecipeCard } from '../../shared/recipe-card/recipe-card';
 
 interface FeatureCard {
   icon: string;
@@ -10,7 +9,7 @@ interface FeatureCard {
 
 @Component({
   selector: 'app-home',
-  imports: [RecipeCard],
+  imports: [],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
