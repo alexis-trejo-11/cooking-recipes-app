@@ -1,11 +1,11 @@
-export interface LoginCredentials {
+export interface LoginRequest {
   email: string;
   password: string;
 }
 
 export interface SignupRequest {
-  firstname: string;
-  lastname: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phoneNumber?: string;
   password: string;
@@ -13,7 +13,17 @@ export interface SignupRequest {
   dateOfBirth?: string;
 }
 
-export interface User {
-  id: number;
-  name: string;
+export interface ApiErrorResponse {
+  error: {
+    code: string;
+    message: string;
+    details?: { string: string };
+  };
+}
+
+export interface AuthSessionResponse {
+  tokenType: string;
+  accessToken: string;
+  refreshToken: string;
+  userId: string;
 }

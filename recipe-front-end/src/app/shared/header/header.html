@@ -27,8 +27,9 @@
           </a>
           <a routerLink="/recipes" routerLinkActive="active-link" class="nav-link"> Recipes </a>
           @if (authService.isAuthenticated()) {
-          <a routerLink="/favorites" routerLinkActive="active-link" class="nav-link"> Favorites </a>
-          <a routerLink="/create" routerLinkActive="active-link" class="nav-link"> Create </a>
+          <a routerLink="/user-dashboard" routerLinkActive="active-link" class="nav-link">
+            Actions
+          </a>
           }
           <a routerLink="/about" routerLinkActive="active-link" class="nav-link"> About </a>
         </div>
@@ -41,9 +42,9 @@
         <div class="user-section">
           <a routerLink="/profile" class="user-profile">
             <div class="user-avatar">
-              {{ authService.currentUser()?.name?.charAt(0)?.toUpperCase() || 'U' }}
+              {{ authService.currentUser()?.fullName?.charAt(0)?.toUpperCase() || 'U' }}
             </div>
-            <span class="user-name">{{ authService.currentUser()?.name }}</span>
+            <span class="user-name">{{ authService.currentUser()?.fullName }}</span>
           </a>
           <button (click)="handleLogout()" class="logout-btn">Logout</button>
         </div>

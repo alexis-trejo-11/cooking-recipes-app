@@ -19,7 +19,11 @@ export class RecipeService {
     return this.http.get<Recipe>(`${this.apiUrl}/${id}`);
   }
 
-  getRecipesByAuthor(authorId: string): Observable<Recipe> {
-    return this.http.get<Recipe>(`${this.apiUrl}/author/${authorId}`);
+  getRecipesByAuthor(authorId: string): Observable<RecipeSummaryPage> {
+    return this.http.get<RecipeSummaryPage>(`${this.apiUrl}/author/${authorId}`);
+  }
+
+  deleteRecipe(): Observable<void> {
+    return of();
   }
 }

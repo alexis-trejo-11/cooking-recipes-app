@@ -14,6 +14,20 @@
   --primary-color: #f97316;
   --primary-hover: #ea580c;
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+
+  --error-color: #dc2626;
+  --error-bg: #fef2f2;
+  --error-border: #fecaca;
+  --error-shadow: rgba(220, 38, 38, 0.1);
+  --error-focus-shadow: rgba(220, 38, 38, 0.2);
+
+  --button-shadow: rgba(249, 115, 22, 0.3);
+  --button-hover-shadow: rgba(249, 115, 22, 0.4);
+
+  --focus-ring: rgba(249, 115, 22, 0.1);
+
+  --spinner-bg: rgba(255, 255, 255, 0.3);
+  --spinner-fg: rgba(255, 255, 255, 0.7);
 }
 
 .dark {
@@ -28,6 +42,20 @@
   --primary-color: #fb923c;
   --primary-hover: #fdba74;
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+
+  --error-color: #f87171;
+  --error-bg: rgba(220, 38, 38, 0.1);
+  --error-border: rgba(220, 38, 38, 0.3);
+  --error-shadow: rgba(239, 68, 68, 0.2);
+  --error-focus-shadow: rgba(239, 68, 68, 0.3);
+
+  --button-shadow: rgba(251, 146, 60, 0.3);
+  --button-hover-shadow: rgba(251, 146, 60, 0.4);
+
+  --focus-ring: rgba(251, 146, 60, 0.2);
+
+  --spinner-bg: rgba(255, 255, 255, 0.3);
+  --spinner-fg: rgba(255, 255, 255, 0.7);
 }
 
 // Variables SCSS

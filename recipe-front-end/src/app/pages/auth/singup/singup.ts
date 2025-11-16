@@ -15,8 +15,8 @@ export class Singup {
   private authService = inject(AuthService);
   //private router = inject(Router);
   userData: SignupRequest = {
-    firstname: '',
-    lastname: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phoneNumber: '',
     password: '',

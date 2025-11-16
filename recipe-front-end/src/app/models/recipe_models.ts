@@ -124,7 +124,7 @@ export interface NutritionalInfo {
 }
 
 export interface Recipe {
-  id: number;
+  id: string;
   name: string;
   author_id: number;
   author_name?: string | null;
