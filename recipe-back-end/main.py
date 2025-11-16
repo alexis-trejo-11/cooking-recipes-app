@@ -13,6 +13,7 @@ from app.config.global_exception_handler import (
 from app.modules.recipe.presentation.controller import router as recipe_router
 from app.modules.auth.presentation.user_controller import router as user_router
 from app.modules.auth.presentation.auth_controller import router as auth_router
+from app.config.redis_config import initialize_redis, close_redis
 
 
 setup_logging()
@@ -33,7 +34,9 @@ origins = [
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    await initialize_redis()
     yield
+    await close_redis()
     await close_db()
 
 

@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api/v1/users", tags=["Users"])
 
 
 @router.get(
-    "/me", summary="Get Current User Profile", response_model=UserProfileResponse
+    "/profile", summary="Get Current User Profile", response_model=UserProfileResponse
 )
 async def get_current_user_profile(
     use_case: GetUserProfileUseCaseDep,
@@ -31,7 +31,7 @@ async def get_current_user_profile(
 
 
 @router.put(
-    "/me",
+    "/profile",
     summary="Update Current User Profile",
     response_model=None,
     status_code=status.HTTP_204_NO_CONTENT,

@@ -1,7 +1,7 @@
 from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated, Optional, List
-from app.modules.auth.domain.interfaces import TokenService
+from app.modules.auth.domain.interfaces import EnhancedTokenService as TokenService
 from app.modules.auth.domain.user import User, UserRole
 from app.modules.auth.application.exceptions import (
     InvalidTokenException,

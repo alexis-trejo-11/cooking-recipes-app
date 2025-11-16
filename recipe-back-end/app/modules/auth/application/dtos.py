@@ -76,13 +76,28 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str = Field(..., description="Refresh token to get new access token")
+
+
 class AuthResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user_id: str
+    """Response containing both access and refresh tokens"""
+
+    access_token: str = Field(..., description="JWT access token (short-lived)")
+    refresh_token: str = Field(..., description="JWT refresh token (long-lived)")
+    token_type: str = Field(default="bearer", description="Token type")
+    expires_in: int = Field(..., description="Access token expiration time in seconds")
+    user_id: str = Field(..., description="User ID")
+
+
+class LogoutResponse(BaseModel):
+    message: str = Field(default="Successfully logged out")
+    revoked_sessions: int = Field(..., description="Number of sessions revoked")
 
 
 class UserProfileResponse(BaseModel):
+    """Response model for user profile information"""
+
     id: str = Field(..., alias="user_id")
     # Personal information
     full_name: str = Field(..., description="Full name of the user")
@@ -132,15 +147,29 @@ class UserProfileResponse(BaseModel):
 
 
 class UserResponse(BaseModel):
-    user_id: str
-    first_name: str
-    last_name: str
-    email: str
-    phone_number: Optional[str]
-    roles: List[str]
-    is_active: bool
-    joined_at: datetime
-    last_login: Optional[datetime]
+    id: str = Field(..., alias="user_id")
+    full_name: str = Field(..., description="Full name of the user")
+    email: str = Field(..., description="User's email address")
+    phone_number: Optional[str] = Field(None, description="User's phone number")
+    roles: List[str] = Field(..., description="Roles assigned to the user")
+    is_active: bool = Field(..., description="Indicates if the user is active")
+    joined_at: datetime = Field(..., description="Date and time the user joined")
+    last_login: Optional[datetime] = Field(
+        None, description="Date and time of the user's last login"
+    )
+
+    @classmethod
+    def from_user(cls, user: User) -> "UserResponse":
+        return cls(
+            user_id=str(user.id),
+            full_name=f"{user.first_name} {user.last_name}",
+            email=user.email,
+            phone_number=user.phone_number,
+            roles=[role.value for role in user.roles],
+            is_active=user.is_active,
+            joined_at=user.joined_at,
+            last_login=user.last_login,
+        )
 
 
 class UpdateUserProfileRequest(BaseModel):

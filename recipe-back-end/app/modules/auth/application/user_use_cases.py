@@ -70,8 +70,7 @@ class ListUsersUseCase:
         return [
             UserResponse(
                 user_id=str(user.id),
-                first_name=user.first_name,
-                last_name=user.last_name,
+                full_name=f"{user.first_name} {user.last_name}",
                 email=user.email,
                 phone_number=user.phone_number,
                 roles=[role.value for role in user.roles],

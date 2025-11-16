@@ -10,7 +10,9 @@ class Settings(BaseSettings):
     DB_TIMEOUT: float = 5.0
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
-    JWT_ACCESS_TOKEN_EXPIRES: int = 30
+    JWT_ACCESS_TOKEN_EXPIRES_MINUTES: int = 30
+    JWT_REFRESH_TOKEN_EXPIRES_DAYS: int = 90  # 3 months
+
     DEBUG: bool = False
 
     RATE_LIMIT_ENABLED: bool = True

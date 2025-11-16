@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Protocol, Tuple
 from .user import User, UserId, UserRecipeStats
+from .session import UserSession
 
 
 class UserRepository(ABC):
@@ -61,20 +62,71 @@ class PasswordHasher(ABC):
         pass
 
 
-class TokenService(ABC):
-    """Abstract base class for token generation and verification"""
+class EnhancedTokenService(Protocol):
+    """Enhanced token service with refresh token support"""
 
-    @abstractmethod
+    async def create_tokens(self, user: User) -> Tuple[str, str]:
+        """Create both access and refresh tokens
+
+        Returns:
+            Tuple[access_token, refresh_token]
+        """
+        ...
+
     async def create_access_token(self, user: User) -> str:
-        """Create access token for user"""
-        pass
+        """Create JWT access token (short-lived)"""
+        ...
 
-    @abstractmethod
-    async def verify_access_token(self, token: str) -> Dict[str, Any]:
+    async def create_refresh_token(self, user: User) -> str:
+        """Create JWT refresh token (long-lived)"""
+        ...
+
+    async def verify_access_token(self, token: str) -> dict:
         """Verify access token and return payload"""
-        pass
+        ...
 
-    @abstractmethod
+    async def verify_refresh_token(self, token: str) -> dict:
+        """Verify refresh token and return payload"""
+        ...
+
     async def get_user_from_token(self, token: str) -> User:
-        """Get user from token"""
-        pass
+        """Get user from access token"""
+        ...
+
+    async def get_user_from_refresh_token(self, token: str) -> User:
+        """Get user from refresh token"""
+        ...
+
+
+class SessionRepository(Protocol):
+    """Repository interface for session management"""
+
+    async def save_session(self, session: UserSession) -> None:
+        """Save a new session"""
+        ...
+
+    async def get_session(self, session_id: str) -> Optional[UserSession]:
+        """Get session by ID"""
+        ...
+
+    async def get_session_by_refresh_token(
+        self, refresh_token: str
+    ) -> Optional[UserSession]:
+        """Get session by refresh token"""
+        ...
+
+    async def delete_session(self, session_id: str) -> bool:
+        """Delete a specific session"""
+        ...
+
+    async def delete_all_user_sessions(self, user_id: str) -> int:
+        """Delete all sessions for a user (logout from all devices)"""
+        ...
+
+    async def update_last_activity(self, session_id: str) -> None:
+        """Update session last activity timestamp"""
+        ...
+
+    async def cleanup_expired_sessions(self) -> int:
+        """Remove expired sessions"""
+        ...
