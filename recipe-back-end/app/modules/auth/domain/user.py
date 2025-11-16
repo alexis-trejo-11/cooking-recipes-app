@@ -42,7 +42,11 @@ class UserId:
 
     def __post_init__(self):
         if not isinstance(self.value, int) or self.value < 0:
-            raise ValueError("User ID must be a non-negative integer")
+            raise UserValidationException(
+                field="user_id",
+                message="User ID must be a non-negative integer",
+                value=self.value,
+            )
 
     def __str__(self) -> str:
         return str(self.value)
@@ -61,7 +65,11 @@ class UserId:
         try:
             return cls(int(value))
         except (ValueError, TypeError):
-            raise ValueError(f"Cannot create UserId from string: {value}")
+            raise UserValidationException(
+                field="user_id",
+                message="User ID must be a valid integer string",
+                value=value,
+            )
 
     @classmethod
     def zero(cls) -> "UserId":
@@ -328,8 +336,12 @@ class User:
                     elif isinstance(role, str):
                         roles.append(UserRole(role))
                     else:
-                        raise ValueError(f"Invalid role type: {type(role)}")
-                except ValueError as e:
+                        raise UserValidationException(
+                            field="roles",
+                            message="Role must be a string or UserRole enum",
+                            value=role,
+                        )
+                except UserValidationException as e:
                     raise UserReconstructionException(
                         f"Invalid role value: {role}", invalid_data=user_data
                     ) from e
@@ -340,7 +352,11 @@ class User:
                 if isinstance(joined_at, str):
                     joined_at = datetime.fromisoformat(joined_at)
                 elif not isinstance(joined_at, datetime):
-                    raise ValueError("joined_at must be datetime or ISO string")
+                    raise UserValidationException(
+                        field="joined_at",
+                        message="joined_at must be datetime or ISO string",
+                        value=joined_at,
+                    )
 
                 last_login = user_data.get("last_login")
                 if last_login and isinstance(last_login, str):
@@ -350,7 +366,7 @@ class User:
                 if isinstance(gender, str):
                     gender = UserGender(gender)
 
-            except (ValueError, TypeError) as e:
+            except (UserValidationException, TypeError) as e:
                 raise UserReconstructionException(
                     f"Invalid date format: {str(e)}", invalid_data=user_data
                 ) from e
@@ -361,7 +377,11 @@ class User:
                 if isinstance(date_of_birth, str):
                     date_of_birth = datetime.fromisoformat(date_of_birth)
                 elif not isinstance(date_of_birth, datetime):
-                    raise ValueError("date_of_birth must be datetime or ISO string")
+                    raise UserValidationException(
+                        field="date_of_birth",
+                        message="date_of_birth must be datetime or ISO string",
+                        value=date_of_birth,
+                    )
             profile_picture_url = user_data.get("profile_picture_url")
             if profile_picture_url is not None:
                 profile_picture_url = str(profile_picture_url)
@@ -384,7 +404,7 @@ class User:
                 bio=bio,
             )
 
-        except (KeyError, ValueError, TypeError) as e:
+        except (KeyError, UserValidationException, TypeError) as e:
             raise UserReconstructionException(
                 f"Data reconstruction error: {str(e)}", invalid_data=user_data
             ) from e

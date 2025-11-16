@@ -32,11 +32,9 @@ class BaseAppException(Exception):
         """Convert exception to dictionary for API responses"""
         return {
             "error": {
-                "id": self.error_id,
                 "code": self.error_code,
                 "message": self.message,
                 "details": self.details,
-                "timestamp": self.timestamp.isoformat(),
             }
         }
 
@@ -61,7 +59,7 @@ class DomainException(BaseAppException):
         self,
         message: str = "Domain error occurred",
         error_code: str = "DOMAIN_ERROR",
-        status_code: int = 400,
+        status_code: int = 422,
         details: Optional[Dict[str, Any]] = None,
         context: Optional[Dict[str, Any]] = None,
     ):
@@ -75,7 +73,7 @@ class ApplicationException(BaseAppException):
         self,
         message: str = "Application error occurred",
         error_code: str = "APPLICATION_ERROR",
-        status_code: int = 400,
+        status_code: int = 422,
         details: Optional[Dict[str, Any]] = None,
         context: Optional[Dict[str, Any]] = None,
     ):

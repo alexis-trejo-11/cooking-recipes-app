@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from .recipe import RecipeId, UserId
+from ...exceptions import RecipeReviewException
 
 
 @dataclass(frozen=True)
@@ -16,10 +17,12 @@ class Review:
 
     def __post_init__(self):
         if not (1 <= self.rating <= 5):
-            raise ValueError("Rating must be between 1 and 5")
+            raise RecipeReviewException(message="Rating must be between 1 and 5")
 
         if not isinstance(self.comment, str):
-            raise ValueError("Comment must be a string")
+            raise RecipeReviewException(message="Comment must be a string")
 
         if len(self.comment) > 1000:
-            raise ValueError("Comment must not exceed 1000 characters")
+            raise RecipeReviewException(
+                message="Comment must not exceed 1000 characters"
+            )

@@ -2,6 +2,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Optional, List
 from decimal import Decimal
+from ...exceptions import RecipeDomainException
+
 
 logger = logging.getLogger("app.modules.recipe")
 
@@ -48,14 +50,14 @@ class Quantity:
     def __post_init__(self):
         """Validar la cantidad."""
         if self.value < 0:
-            raise ValueError("Quantity value cannot be negative")
+            raise RecipeDomainException("Quantity value cannot be negative")
         if not self.unit or not self.unit.strip():
-            raise ValueError("Unit cannot be empty")
+            raise RecipeDomainException("Unit cannot be empty")
 
     def scale(self, factor: Decimal) -> "Quantity":
         """Escalar cantidad por un factor."""
         if factor < 0:
-            raise ValueError("Scaling factor cannot be negative")
+            raise RecipeDomainException("Scaling factor cannot be negative")
         return Quantity(value=self.value * factor, unit=self.unit)
 
     def convert_to(self, target_unit: str, conversion_rate: Decimal) -> "Quantity":
@@ -80,7 +82,7 @@ class NutritionalInfo:
     def scale(self, factor: Decimal) -> "NutritionalInfo":
         """Escalar información nutricional."""
         if factor < 0:
-            raise ValueError("Scaling factor cannot be negative")
+            raise RecipeDomainException("Scaling factor cannot be negative")
 
         return NutritionalInfo(
             calories=round(self.calories * factor) if self.calories else None,
@@ -120,7 +122,7 @@ class ServingInfo:
     def __post_init__(self):
         """Validar información de porciones."""
         if self.servings <= 0:
-            raise ValueError("Servings must be positive")
+            raise RecipeDomainException("Servings must be positive")
 
     def scale_servings(self, new_servings: int) -> "ServingInfo":
         """Crear nueva información de porciones para diferente cantidad."""
@@ -146,7 +148,7 @@ class CookingTime:
             time < 0
             for time in [self.prep_minutes, self.cook_minutes, self.rest_minutes]
         ):
-            raise ValueError("Time values cannot be negative")
+            raise RecipeDomainException("Time values cannot be negative")
 
     def calculate_total_minutes(self) -> int:
         """Calcular tiempo total en minutos."""
@@ -184,11 +186,11 @@ class Step:
     def __post_init__(self):
         """Validar paso."""
         if not self.description.strip():
-            raise ValueError("Step description cannot be empty")
+            raise RecipeDomainException("Step description cannot be empty")
         if self.number <= 0:
-            raise ValueError("Step number must be positive")
+            raise RecipeDomainException("Step number must be positive")
         if self.duration_minutes and self.duration_minutes < 0:
-            raise ValueError("Duration cannot be negative")
+            raise RecipeDomainException("Duration cannot be negative")
 
     def with_ingredients(self, ingredient_names: List[str]) -> "Step":
         """Crear nueva instancia con ingredientes especificados."""
@@ -221,7 +223,7 @@ class Tag:
     def __post_init__(self):
         """Validar y normalizar etiqueta."""
         if not self.name.strip():
-            raise ValueError("Tag name cannot be empty")
+            raise RecipeDomainException("Tag name cannot be empty")
         # Normalizar a minúsculas
         object.__setattr__(self, "name", self.name.lower().strip())
         if self.description:

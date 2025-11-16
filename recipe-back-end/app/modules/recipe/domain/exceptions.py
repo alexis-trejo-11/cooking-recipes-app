@@ -1,4 +1,20 @@
-class RecipeDomainException(Exception):
+from app.utils.core.exceptions.modules import RecipeException
+
+
+class RecipeReviewException(RecipeException):
+    """Base exception for recipe review-related errors"""
+
+    def __init__(
+        self,
+        message: str = "Recipe review operation failed",
+        error_code: str = "RECIPE_REVIEW_ERROR",
+        details: dict | None = None,
+        context: dict | None = None,
+    ):
+        super().__init__(message, error_code, details, context)
+
+
+class RecipeDomainException(RecipeException):
     """Base exception for all Recipe domain errors"""
 
     def __init__(self, message: str, error_code: str = "DOMAIN_ERROR"):

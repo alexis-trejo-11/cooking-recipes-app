@@ -50,6 +50,7 @@ from app.utils.core.pagination import Page, PaginationParams
 logger = logging.getLogger("app.modules.recipe")
 
 
+# TODO: DocStrings are not updated and don't raise ValueError.
 class SearchRecipesUseCase(ABC):
     @abstractmethod
     async def execute(self, request: RecipeSearchRequest) -> RecipePageResponse:

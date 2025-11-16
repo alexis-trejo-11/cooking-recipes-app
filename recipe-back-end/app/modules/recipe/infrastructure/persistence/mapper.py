@@ -1,6 +1,7 @@
-from typing import Optional, List, Set
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+import logging
+import json
+from decimal import Decimal
+from typing import Optional, List
 from app.modules.recipe.domain.models.entities.recipe import (
     Recipe,
     RecipeReconstructData,
@@ -30,9 +31,7 @@ from app.modules.recipe.domain.models.value_objects.value_objects_standard impor
     NutritionalInfo,
     Quantity,
 )
-from decimal import Decimal
-import json
-import logging
+from app.utils.core.exceptions.modules import MappingException
 
 logger = logging.getLogger("app.modules.recipe")
 
@@ -67,10 +66,12 @@ class RecipeMapper:
             Recipe domain entity
 
         Raises:
-            ValueError: If required relationships are not loaded
+            MappingException: If required relationships are not loaded
         """
         if not hasattr(recipe_model, "ingredients"):
-            raise ValueError("Recipe model must have ingredients relationship loaded")
+            raise MappingException(
+                "Recipe model must have ingredients relationship loaded"
+            )
 
         data = RecipeReconstructData(
             id=RecipeId(recipe_model.id),
@@ -235,7 +236,7 @@ class RecipeMapper:
         for model in meal_type_models:
             try:
                 meal_types.add(MealType(model.meal_type))
-            except ValueError as e:
+            except MappingException as e:
                 logger.warning(f"Invalid meal type '{model.meal_type}': {e}")
                 continue
 

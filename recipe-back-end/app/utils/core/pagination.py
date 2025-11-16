@@ -1,8 +1,23 @@
 from typing import TypeVar, Generic, Optional, Any, Dict, Callable
 from math import ceil
+from .exceptions.base import ApplicationException
 
 TI = TypeVar("TI")  # Input type
 TO = TypeVar("TO")  # Output type
+
+
+class PaginationException(ApplicationException):
+    """Exception raised for pagination-related errors."""
+
+    def __init__(
+        self,
+        message: str = "Pagination error occurred",
+        error_code: str = "PAGINATION_ERROR",
+        status_code: int = 400,
+        details: Optional[Dict[str, Any]] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(message, error_code, status_code, details, context)
 
 
 class Page(Generic[TI]):
@@ -33,12 +48,12 @@ class Page(Generic[TI]):
             size: Number of items per page. Defaults to 10.
 
         Raises:
-            ValueError: If page or size are less than 1
+            PaginationException: If page or size are less than 1
         """
         if page < 1:
-            raise ValueError("Page must be greater than or equal to 1")
+            raise PaginationException("Page must be greater than or equal to 1")
         if size < 1:
-            raise ValueError("Size must be greater than or equal to 1")
+            raise PaginationException("Size must be greater than or equal to 1")
 
         self.items = items
         self.total = total
@@ -224,14 +239,14 @@ class PaginationParams:
             size: The number of items per page. Defaults to 10.
 
         Raises:
-            ValueError: If page or size are less than 1
+            PaginationException: If page or size are less than 1
         """
         if page < 1:
-            raise ValueError("Page must be greater than or equal to 1")
+            raise PaginationException("Page must be greater than or equal to 1")
         if size < 1:
-            raise ValueError("Size must be greater than or equal to 1")
+            raise PaginationException("Size must be greater than or equal to 1")
         if sort_dir not in ("asc", "desc"):
-            raise ValueError("sort_dir must be either 'asc' or 'desc'")
+            raise PaginationException("sort_dir must be either 'asc' or 'desc'")
 
         self.page = page
         self.size = size

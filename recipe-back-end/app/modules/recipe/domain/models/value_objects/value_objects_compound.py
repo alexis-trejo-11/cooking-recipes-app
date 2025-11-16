@@ -1,8 +1,8 @@
 import logging
-from dataclasses import dataclass, field
-from typing import Optional, List, Set, TYPE_CHECKING
+from typing import Optional, List, Set
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+from ..entities.ingredient import Ingredient, IngredientId
 from ..value_objects.value_objects_standard import (
     CookingTime,
     NutritionalInfo,
@@ -11,9 +11,7 @@ from ..value_objects.value_objects_standard import (
     Tag,
 )
 from .enums import MealType
-from ..entities.ingredient import Ingredient, IngredientId
-from ..entities.recipe import RecipeId
-
+from ...exceptions import RecipeDomainException
 
 logger = logging.getLogger("app.modules.recipe")
 
@@ -44,16 +42,16 @@ class TimeStamps:
         now = datetime.now(timezone.utc)
 
         if self._created_at > now:
-            raise ValueError("Creation date cannot be in the future")
+            raise RecipeDomainException("Creation date cannot be in the future")
 
         time_diff = (self._created_at - self._updated_at).total_seconds()
         if time_diff > 1:
-            raise ValueError(
+            raise RecipeDomainException(
                 f"Update date cannot be before creation date (diff: {time_diff}s)"
             )
 
         if self._deleted_at and self._deleted_at < self._created_at:
-            raise ValueError("Deletion date cannot be before creation date")
+            raise RecipeDomainException("Deletion date cannot be before creation date")
 
     @classmethod
     def create(cls) -> "TimeStamps":
@@ -144,7 +142,7 @@ class RecipeCollections:
     def add_ingredient(self, ingredient: "Ingredient") -> "RecipeCollections":
         """Agregar ingrediente."""
         if any(i.name.lower() == ingredient.name.lower() for i in self._ingredients):
-            raise ValueError(
+            raise RecipeDomainException(
                 f"Ingredient with name '{ingredient.name}' already exists in recipe"
             )
 
@@ -161,7 +159,7 @@ class RecipeCollections:
 
         for ingredient in ingredients:
             if any(i.name.lower() == ingredient.name.lower() for i in new_ingredients):
-                raise ValueError(
+                raise RecipeDomainException(
                     f"Ingredient with name '{ingredient.name}' already exists in recipe"
                 )
             new_ingredients.append(ingredient)
@@ -193,7 +191,7 @@ class RecipeCollections:
         """Agregar paso."""
         # Verificar número único
         if any(s.number == step.number for s in self._steps):
-            raise ValueError(f"Step number {step.number} already exists")
+            raise RecipeDomainException(f"Step number {step.number} already exists")
 
         new_steps = self._steps + [step]
         return RecipeCollections.reconstruct(
@@ -209,7 +207,7 @@ class RecipeCollections:
 
         for step in steps:
             if any(s.number == step.number for s in new_steps):
-                raise ValueError(f"Step number {step.number} already exists")
+                raise RecipeDomainException(f"Step number {step.number} already exists")
             new_steps.append(step)
 
         return RecipeCollections.reconstruct(
@@ -335,9 +333,9 @@ class RecipeTrackingInfo:
         version: int = 1,
     ):
         if rating_sum < 0 or review_count < 0 or view_count < 0 or favorite_count < 0:
-            raise ValueError("Count values cannot be negative")
+            raise RecipeDomainException("Count values cannot be negative")
         if version < 1:
-            raise ValueError("Version must be at least 1")
+            raise RecipeDomainException("Version must be at least 1")
 
         self._rating_sum = rating_sum
         self._rating_count = review_count
@@ -348,7 +346,7 @@ class RecipeTrackingInfo:
     def decrement_favorite_count(self) -> "RecipeTrackingInfo":
         """Decrementar contador de favoritos."""
         if self._favorite_count == 0:
-            raise ValueError("Favorite count cannot be negative")
+            raise RecipeDomainException("Favorite count cannot be negative")
         return RecipeTrackingInfo(
             rating_sum=self._rating_sum,
             review_count=self._rating_count,
@@ -465,7 +463,9 @@ class RecipeMetadata:
             return self._nutritional_info.scale(factor)
         except (InvalidOperation, ZeroDivisionError) as e:
             logger.error(f"Error scaling nutritional info: {e}")
-            raise ValueError("Invalid serving size for nutritional scaling") from e
+            raise RecipeDomainException(
+                "Invalid serving size for nutritional scaling"
+            ) from e
 
     @property
     def cooking_time(self) -> Optional[CookingTime]:
