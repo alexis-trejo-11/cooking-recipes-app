@@ -69,6 +69,18 @@ class SearchRecipesUseCase(ABC):
         pass
 
 
+class GetFeaturedRecipesUseCase(ABC):
+    @abstractmethod
+    async def execute(self) -> List[RecipeSummaryResponse]:
+        """
+        Get a list of 5 featured recipes.
+
+        Returns:
+            List[RecipeResponse]: List of 5 featured recipes
+        """
+        pass
+
+
 class GetUserRecipesUseCase(ABC):
     @abstractmethod
     async def execute(
@@ -266,6 +278,17 @@ class SearchRecipesUseCaseImpl(SearchRecipesUseCase):
 
         if request.max_cooking_time is not None and request.max_cooking_time < 1:
             raise ValueError("Maximum cooking time must be at least 1 minute")
+
+
+class GetFeaturedRecipesUseCaseImpl(GetFeaturedRecipesUseCase):
+    def __init__(self, recipe_repository: RecipeRepository):
+        self.recipe_repository = recipe_repository
+
+    async def execute(self) -> List[RecipeSummaryResponse]:
+        featured_recipes = await self.recipe_repository.find_featured_recipes(limit=5)
+        return [
+            RecipeSummaryResponse.from_recipe(recipe) for recipe in featured_recipes
+        ]
 
 
 class CreateRecipeUseCaseImpl(CreateRecipeUseCase):

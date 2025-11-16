@@ -25,9 +25,11 @@ from app.modules.recipe.application.use_cases import (
     IncrementViewCountUseCase,
     ToggleFavoriteUseCase,
     GetUserRecipesUseCase,
+    GetFeaturedRecipesUseCase,
     UpdateRecipeUseCase,
     DeleteRecipeUseCase,
     GetRecipeFavoritesByUserUseCase,
+    GetFeaturedRecipesUseCaseImpl,
     CreateRecipeUseCaseImpl,
     CreateReviewUseCaseImpl,
     DeleteReviewUseCaseImpl,
@@ -170,6 +172,15 @@ async def get_get_recipe_use_case(
     return GetRecipeUseCaseImpl(recipe_repository)
 
 
+async def get_get_featured_recipes_use_case(
+    recipe_repository: Annotated[RecipeRepository, Depends(get_recipe_repository)],
+) -> GetFeaturedRecipesUseCase:
+    """
+    Dependency for GetFeaturedRecipesUseCase.
+    """
+    return GetFeaturedRecipesUseCaseImpl(recipe_repository)
+
+
 async def get_search_recipes_use_case(
     recipe_repository: Annotated[RecipeRepository, Depends(get_recipe_repository)],
 ) -> SearchRecipesUseCase:
@@ -303,4 +314,8 @@ GetRecipeUseCaseDep = Annotated[GetRecipeUseCase, Depends(get_get_recipe_use_cas
 
 SearchRecipesUseCaseDep = Annotated[
     SearchRecipesUseCase, Depends(get_search_recipes_use_case)
+]
+
+GetFeaturedRecipesUseCaseDep = Annotated[
+    GetFeaturedRecipesUseCase, Depends(get_get_featured_recipes_use_case)
 ]

@@ -48,6 +48,7 @@ class SqlAlchemyRecipeRepository(RecipeRepository):
         self._step_repo = _StepRepository(session)
         self._tag_repo = _TagRepository(session)
 
+    # TODO: Optimize with joins and aggregates
     async def find_by_id(
         self,
         recipe_id: RecipeId,
@@ -79,7 +80,33 @@ class SqlAlchemyRecipeRepository(RecipeRepository):
         if not recipe_model:
             return None
 
-        return self.mapper.model_to_entity(recipe_model)
+        rating_count_stmt = (
+            select(func.count())
+            .select_from(recipe_reviews)
+            .where(recipe_reviews.c.recipe_id == recipe_id.value)
+        )
+        rating_sum_stmt = (
+            select(func.coalesce(func.sum(recipe_reviews.c.rating), 0))
+            .select_from(recipe_reviews)
+            .where(recipe_reviews.c.recipe_id == recipe_id.value)
+        )
+        favorite_count_stmt = (
+            select(func.count())
+            .select_from(recipe_favorites)
+            .where(recipe_favorites.c.recipe_id == recipe_id.value)
+        )
+        rating_count_result = await self.session.execute(rating_count_stmt)
+        rating_count = rating_count_result.scalar() or 0
+
+        rating_sum_result = await self.session.execute(rating_sum_stmt)
+        rating_sum = rating_sum_result.scalar() or 0
+
+        favorite_count_result = await self.session.execute(favorite_count_stmt)
+        favorite_count = favorite_count_result.scalar() or 0
+
+        return self.mapper.model_to_entity(
+            recipe_model, rating_sum, rating_count, favorite_count
+        )
 
     async def find_by_id_and_author(
         self, recipe_id: RecipeId, author_id: UserId
@@ -101,6 +128,21 @@ class SqlAlchemyRecipeRepository(RecipeRepository):
             return None
 
         return self.mapper.model_to_entity(recipe_model)
+
+    async def find_featured_recipes(self, limit: int) -> list[Recipe]:
+        """Find featured recipes for display on the homepage."""
+        stmt = (
+            select(RecipeModel)
+            .where(RecipeModel.deleted_at.is_(None))
+            .order_by(RecipeModel.view_count.desc())
+            .limit(limit)
+        )
+        stmt = self._apply_relationship_loading(stmt)
+
+        result = await self.session.execute(stmt)
+        recipe_models = result.scalars().all()
+
+        return [self.mapper.model_to_entity(model) for model in recipe_models]
 
     async def find_favorites_by_user_id(
         self,

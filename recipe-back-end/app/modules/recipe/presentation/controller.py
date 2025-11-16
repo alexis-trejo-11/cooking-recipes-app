@@ -11,6 +11,21 @@ router = APIRouter(prefix="/api/v1/recipes", tags=["Recipes"])
 
 @rate_limit("public")
 @router.get(
+    "/featured",
+    response_model=List[RecipeSummaryResponse],
+    summary="Get Featured Recipes",
+)
+async def get_featured_recipes(
+    use_case: GetFeaturedRecipesUseCaseDep,
+) -> List[RecipeSummaryResponse]:
+    """
+    Get a list of featured recipes.
+    """
+    return await use_case.execute()
+
+
+@rate_limit("public")
+@router.get(
     "",
     response_model=RecipePageResponse,
     summary="Search Recipes",

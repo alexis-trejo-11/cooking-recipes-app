@@ -49,7 +49,6 @@ class RecipeMapper:
         recipe_model: RecipeModel,
         rating_sum: Optional[int] = None,
         rating_count: Optional[int] = None,
-        view_count: Optional[int] = None,
         favorite_count: Optional[int] = None,
     ) -> Recipe:
         """
@@ -89,7 +88,7 @@ class RecipeMapper:
             nutritional_info=RecipeMapper._map_nutritional_info(recipe_model),
             rating_sum=rating_sum or 0,
             review_count=rating_count or 0,
-            view_count=view_count or 0,
+            view_count=recipe_model.view_count or 0,
             favorite_count=favorite_count or 0,
             version=recipe_model.version or 1,
             created_at=recipe_model.created_at,

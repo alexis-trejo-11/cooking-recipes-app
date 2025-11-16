@@ -199,7 +199,6 @@ class Step:
             description=self.description,
             duration_minutes=self.duration_minutes,
             technique=self.technique,
-            temperature=self.temperature,
             ingredients_used=ingredient_names,
         )
 

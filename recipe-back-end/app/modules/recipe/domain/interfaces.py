@@ -43,6 +43,18 @@ class RecipeRepository(ABC):
         pass
 
     @abstractmethod
+    async def find_featured_recipes(self, limit: int) -> list[Recipe]:
+        """
+        Find featured recipes for display on the homepage.
+
+        Args:
+            limit: Maximum number of featured recipes to retrieve
+        Returns:
+            List of featured Recipe entities
+        """
+        pass
+
+    @abstractmethod
     async def find_by_id_and_author(
         self, recipe_id: RecipeId, author_id: UserId
     ) -> Optional[Recipe]:
