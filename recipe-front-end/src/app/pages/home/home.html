@@ -50,16 +50,16 @@
       </div>
 
       <!-- Recipes Grid -->
-      @if (loadingQuick()) {
+      @if (loadingFeatured()) {
       <div class="recipes-grid">
         @for (i of [1,2,3]; track i) {
         <div class="recipe-skeleton"></div>
         }
       </div>
-      } @else if (quickRecipes().length > 0) {
+      } @else if (featuredRecipes().length > 0) {
       <div class="recipes-grid">
-        @for (recipe of quickRecipes(); track recipe.id) {
-        <!-- <app-recipe-card [recipe]="recipe" /> -->
+        @for (recipe of featuredRecipes(); track recipe.id) {
+        <app-recipe-card [recipe]="recipe" />
         }
       </div>
       } @else {

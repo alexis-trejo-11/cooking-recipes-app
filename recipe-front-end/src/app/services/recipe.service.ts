@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Recipe, RecipeSummaryPage } from '../models/recipe_models';
+import { Recipe, RecipeSummary, RecipeSummaryPage } from '../models/recipe_models';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { environment } from '../../enviorments/enviroment';
@@ -21,6 +21,10 @@ export class RecipeService {
 
   getRecipesByAuthor(): Observable<RecipeSummaryPage> {
     return this.http.get<RecipeSummaryPage>(`${this.apiUrl}/user`);
+  }
+
+  getFeaturedRecipes(): Observable<RecipeSummary[]> {
+    return this.http.get<RecipeSummary[]>(`${this.apiUrl}/featured`);
   }
 
   deleteRecipe(): Observable<void> {

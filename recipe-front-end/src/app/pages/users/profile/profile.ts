@@ -6,12 +6,12 @@ import { UserService } from '../../../services/user.service';
 import { AuthService } from '../../../services/auth.service';
 import { RecipeService } from '../../../services/recipe.service';
 import { RecipeCard } from '../../../shared/recipe-card/recipe-card';
+import { UpdateProfile, UserProfile } from '../../../models/user_models';
 import {
   PaginationResponse,
   RecipeSummary,
   RecipeSummaryPage,
 } from '../../../models/recipe_models';
-import { UpdateProfile, UserProfile } from '../../../models/user_models';
 
 @Component({
   selector: 'app-profile',
@@ -43,6 +43,8 @@ export class Profile implements OnInit {
   pageSize = 9;
 
   ngOnInit(): void {
+    console.log('📝 Init Profile');
+
     const currentUser = this.authService.currentUser();
     if (currentUser) {
       this.loadProfile();
@@ -51,24 +53,42 @@ export class Profile implements OnInit {
   }
 
   loadProfile(): void {
+    console.log('📝 Cargando perfil del usuario...');
     this.userService.getUserProfile().subscribe({
       next: (profile) => {
+        console.log('✅ Perfil cargado exitosamente:', profile);
         this.profile.set(profile);
         this.loading.set(false);
+        console.log('🔴 Loading establecido en:', false);
       },
-      error: () => this.loading.set(false),
+      error: (error) => {
+        console.error('❌ Error cargando perfil:', error);
+        this.loading.set(false);
+        console.log('🔴 Loading establecido en:', false);
+      },
     });
   }
 
   loadUserRecipes(userId: string, page: number, pageSize: number): void {
+    console.log('🍳 Cargando recetas del usuario:', { userId, page, pageSize });
     this.loadingRecipes.set(true);
+
     this.recipeService.getRecipesByAuthor().subscribe({
       next: (recipePage: RecipeSummaryPage) => {
+        console.log('✅ Recetas cargadas exitosamente:', recipePage);
+        console.log('📊 Número de recetas:', recipePage.recipes?.length);
+        console.log('📄 Información de paginación:', recipePage.pagination);
+
         this.userRecipes.set(recipePage.recipes);
         this.pagination.set(recipePage.pagination);
         this.loadingRecipes.set(false);
+        console.log('🔴 LoadingRecipes establecido en:', false);
       },
-      error: () => this.loadingRecipes.set(false),
+      error: (error) => {
+        console.error('❌ Error cargando recetas:', error);
+        this.loadingRecipes.set(false);
+        console.log('🔴 LoadingRecipes establecido en:', false);
+      },
     });
   }
 

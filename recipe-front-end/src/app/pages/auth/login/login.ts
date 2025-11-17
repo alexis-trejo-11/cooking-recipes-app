@@ -21,7 +21,6 @@ export class Login {
   error = signal('');
 
   handleLogin(): void {
-    // Reset prev err
     this.error.set('');
 
     if (!this.credentials.email || !this.credentials.password) {
@@ -36,17 +35,20 @@ export class Login {
     }
 
     this.loading.set(true);
+    console.log('📤 Enviando credenciales de login...');
 
     this.authService.login(this.credentials).subscribe({
       next: (response) => {
         this.loading.set(false);
-        console.log('Login successful:', response);
+        console.log('✅ Login successful, navegando a dashboard');
+        console.log('🔐 Estado de autenticación:', this.authService.isAuthenticated());
+        console.log('👤 Usuario actual:', this.authService.currentUser());
 
-        this.router.navigate(['/users-dashboard']);
+        this.router.navigate(['/user-dashboard']);
       },
       error: (error: ApiErrorResponse) => {
         this.loading.set(false);
-        console.error('Login failed:', error);
+        console.error('❌ Login failed:', error);
         this.handleLoginError(error);
       },
     });

@@ -190,7 +190,7 @@
   <div class="profile-recipes">
     <h2 class="recipes-title">My Recipes</h2>
 
-    @if (true) {
+    @if (loadingRecipes()) {
     <div class="recipes-grid">
       @for (i of [1,2,3]; track i) {
       <div class="recipe-skeleton"></div>

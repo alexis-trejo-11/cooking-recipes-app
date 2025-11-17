@@ -4,7 +4,6 @@ import { environment } from '../../enviorments/enviroment';
 import { catchError, Observable, tap, throwError } from 'rxjs';
 import { UpdateProfile, UserProfile } from '../models/user_models';
 import { ApiErrorResponse } from '../models/auth_models';
-import { error } from 'console';
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
@@ -14,7 +13,19 @@ export class UserService {
   private apiUrl = `${environment.apiUrl}/users`;
 
   getUserProfile(): Observable<UserProfile> {
-    return this.http.get<UserProfile>(`${this.apiUrl}/profile`).pipe(
+    const token = this.getAccessToken();
+    if (!token) {
+      console.error('❌ No hay token disponible para obtener el usuario');
+      return throwError(() => new Error('No authentication token available'));
+    }
+
+    console.log('🔐 Token disponible:', token.substring(0, 20) + '...');
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+
+    return this.http.get<UserProfile>(`${this.apiUrl}/profile`, { headers }).pipe(
       tap((profile: UserProfile) => {
         return profile;
       }),
@@ -30,10 +41,6 @@ export class UserService {
 
   deleteUserAccount(): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/profile`);
-  }
-
-  getAccessToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
   }
 
   private handleError(error: HttpErrorResponse): Observable<never> {
@@ -56,5 +63,12 @@ export class UserService {
     }
 
     return throwError(() => errorResponse);
+  }
+
+  private getAccessToken(): string | null {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return null;
+    }
+    return localStorage.getItem(this.tokenKey);
   }
 }

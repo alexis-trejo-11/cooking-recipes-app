@@ -7,6 +7,7 @@ import { Singup } from './pages/auth/singup/singup';
 import { About } from './shared/about/about';
 import { DashboardLayout } from './pages/users/dashboard/layout/dashboard-layout';
 import { Profile } from './pages/users/profile/profile';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -36,9 +37,11 @@ export const routes: Routes = [
   {
     path: 'user-dashboard',
     component: DashboardLayout,
+    canActivate: [authGuard],
   },
   {
     path: 'profile',
     component: Profile,
+    canActivate: [authGuard],
   },
 ];
