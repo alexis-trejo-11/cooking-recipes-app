@@ -45,13 +45,13 @@ export class Profile implements OnInit {
   ngOnInit(): void {
     const currentUser = this.authService.currentUser();
     if (currentUser) {
-      this.loadProfile(currentUser.id);
+      this.loadProfile();
       this.loadUserRecipes(currentUser.id, this.currentPage, this.pageSize);
     }
   }
 
-  loadProfile(userId: string): void {
-    this.userService.getUserProfile(userId).subscribe({
+  loadProfile(): void {
+    this.userService.getUserProfile().subscribe({
       next: (profile) => {
         this.profile.set(profile);
         this.loading.set(false);
@@ -62,7 +62,7 @@ export class Profile implements OnInit {
 
   loadUserRecipes(userId: string, page: number, pageSize: number): void {
     this.loadingRecipes.set(true);
-    this.recipeService.getRecipesByAuthor(userId).subscribe({
+    this.recipeService.getRecipesByAuthor().subscribe({
       next: (recipePage: RecipeSummaryPage) => {
         this.userRecipes.set(recipePage.recipes);
         this.pagination.set(recipePage.pagination);

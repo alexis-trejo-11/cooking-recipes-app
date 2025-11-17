@@ -42,7 +42,12 @@ export class Login {
         this.loading.set(false);
         console.log('Login successful:', response);
 
-        this.router.navigate(['/users/dashboard']);
+        this.router.navigate(['/users-dashboard']);
+      },
+      error: (error: ApiErrorResponse) => {
+        this.loading.set(false);
+        console.error('Login failed:', error);
+        this.handleLoginError(error);
       },
     });
   }

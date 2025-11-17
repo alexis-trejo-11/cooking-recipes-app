@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ThemeToggle } from '../theme-toggle/theme-toggle';
 
@@ -11,8 +11,14 @@ import { ThemeToggle } from '../theme-toggle/theme-toggle';
 })
 export class Header {
   authService = inject(AuthService);
+  private router = inject(Router);
 
   handleLogout(): void {
     this.authService.logout().subscribe();
+  }
+
+  onNavClick(route: string): void {
+    console.log('🖱️ [HEADER] Nav clicked:', route);
+    console.log('🖱️ [HEADER] Current URL:', this.router.url);
   }
 }

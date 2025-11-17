@@ -22,16 +22,31 @@
             routerLinkActive="active-link"
             [routerLinkActiveOptions]="{ exact: true }"
             class="nav-link"
+            (click)="onNavClick('home')"
           >
             Home
           </a>
-          <a routerLink="/recipes" routerLinkActive="active-link" class="nav-link"> Recipes </a>
+          <a
+            routerLink="/recipes"
+            (click)="onNavClick('recipes')"
+            routerLinkActive="active-link"
+            class="nav-link"
+          >
+            Recipes
+          </a>
           @if (authService.isAuthenticated()) {
           <a routerLink="/user-dashboard" routerLinkActive="active-link" class="nav-link">
             Actions
           </a>
           }
-          <a routerLink="/about" routerLinkActive="active-link" class="nav-link"> About </a>
+          <a
+            routerLink="/about"
+            (click)="onNavClick('about')"
+            routerLinkActive="active-link"
+            class="nav-link"
+          >
+            About
+          </a>
         </div>
       </div>
 

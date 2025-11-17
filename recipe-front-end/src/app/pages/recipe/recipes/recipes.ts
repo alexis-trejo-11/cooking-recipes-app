@@ -1,4 +1,12 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  effect,
+  inject,
+  OnDestroy,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { RecipeCard } from '../../../shared/recipe-card/recipe-card';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -31,12 +39,14 @@ interface FilterConfig {
 })
 export class Recipes implements OnInit {
   private recipeService = inject(RecipeService);
+  private cdr = inject(ChangeDetectorRef);
+
+  loading = signal(true);
 
   page = signal<RecipeSummaryPage>({
     recipes: [],
     pagination: { total_items: 0, total_pages: 0, current_page: 0, page_size: 0 },
   });
-  loading = signal(true);
   filters: SearchFilters = {
     query: '',
     difficulty: '',
@@ -76,7 +86,13 @@ export class Recipes implements OnInit {
     },
   };
 
-  ngOnInit(): void {
+  constructor() {
+    console.log('🔴 Recipes Constructor');
+    this.cdr.markForCheck(); // ← Fuerza detección de cambios
+  }
+
+  ngOnInit() {
+    console.log('Init Recipes');
     this.loadRecipes();
   }
 
@@ -102,7 +118,6 @@ export class Recipes implements OnInit {
     console.log('Loading recipes...');
     this.recipeService.getAllRecipes().subscribe({
       next: (recipes) => {
-        console.log('Recipes loaded:', recipes);
         this.page.set(recipes);
         this.loading.set(false);
       },

@@ -2,11 +2,10 @@ import { Component, inject, signal } from '@angular/core';
 import { AuthService } from '../../../../services/auth.service';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Header } from '../../../../shared/header/header';
 
 @Component({
   selector: 'app-dashboard-layout',
-  imports: [RouterLink, RouterOutlet, RouterLinkActive, CommonModule, Header],
+  imports: [RouterLink, RouterOutlet, RouterLinkActive, CommonModule],
   templateUrl: './dashboard-layout.html',
   styleUrl: './dashboard-layout.scss',
 })

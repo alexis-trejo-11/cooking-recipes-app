@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { catchError, Observable, of, tap, throwError } from 'rxjs';
-import { User } from '../models/user_models';
+import { User, UserProfile } from '../models/user_models';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../enviorments/enviroment';
 import {
@@ -19,6 +19,7 @@ export class AuthService {
 
   isAuthenticated = signal(false);
   currentUser = signal<User | undefined>(undefined);
+  userProfile = signal<UserProfile | null>(null);
 
   private tokenKey = 'auth_token';
   private refreshTokenKey = 'refresh_token';
@@ -87,7 +88,7 @@ export class AuthService {
   }
 
   getCurrentUser(): Observable<User> {
-    return this.http.get<User>(`${this.apiURL}/me`).pipe(
+    return this.http.get<User>(`${this.apiURL}/auth/me`).pipe(
       tap((user: User) => {
         this.currentUser.set(user);
       }),

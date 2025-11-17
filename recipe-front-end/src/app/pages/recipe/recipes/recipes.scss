@@ -1,10 +1,10 @@
 .recipes-container {
   min-height: 100vh;
-  background-color: #f9fafb;
+  background-color: var(--bg-primary);
 
   .filters-section {
-    background: white;
-    border-bottom: 1px solid #e5e7eb;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
 
     .filters-content {
       max-width: 80rem;
@@ -14,7 +14,7 @@
       .page-title {
         font-size: 2.25rem;
         font-weight: 700;
-        color: #1f2937;
+        color: var(--text-primary);
         margin-bottom: 1.5rem;
       }
 
@@ -31,19 +31,20 @@
         .filter-select {
           padding: 0.75rem 1rem;
           border-radius: 0.75rem;
-          border: 2px solid #e5e7eb;
+          border: 2px solid var(--border-color);
           font-size: 1rem;
           transition: all 0.3s ease;
-          background: white;
+          background: var(--bg-secondary);
+          color: var(--text-primary);
 
           &:focus {
             outline: none;
-            border-color: #f97316;
-            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--focus-ring, rgba(249, 115, 22, 0.1));
           }
 
           &::placeholder {
-            color: #9ca3af;
+            color: var(--text-muted);
           }
         }
 
@@ -55,6 +56,10 @@
           background-repeat: no-repeat;
           background-size: 1.5em 1.5em;
           padding-right: 2.5rem;
+
+          .dark & {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+          }
         }
       }
 
@@ -68,18 +73,18 @@
           align-items: center;
           gap: 0.5rem;
           padding: 0.5rem 1rem;
-          background: #f3f4f6;
-          border: 1px solid #d1d5db;
+          background: var(--bg-accent);
+          border: 1px solid var(--border-color);
           border-radius: 0.5rem;
-          color: #6b7280;
+          color: var(--text-muted);
           font-size: 0.875rem;
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s ease;
 
           &:hover {
-            background: #e5e7eb;
-            color: #374151;
+            background: var(--border-color);
+            color: var(--text-secondary);
           }
 
           .clear-icon {
@@ -103,13 +108,13 @@
       margin-bottom: 1.5rem;
 
       .results-count {
-        color: #6b7280;
+        color: var(--text-muted);
         font-size: 1rem;
       }
 
       .active-filters-badge {
-        background: #ffedd5;
-        color: #9a3412;
+        background: var(--accent-orange, #ffedd5);
+        color: var(--accent-orange-text, #9a3412);
         padding: 0.25rem 0.75rem;
         border-radius: 1rem;
         font-size: 0.75rem;
@@ -131,7 +136,7 @@
       }
 
       .recipe-skeleton {
-        background: #e5e7eb;
+        background: var(--border-color);
         border-radius: 1rem;
         height: 24rem;
         animation: pulse 2s infinite;
@@ -145,24 +150,24 @@
       .empty-icon {
         width: 6rem;
         height: 6rem;
-        color: #d1d5db;
+        color: var(--border-color);
         margin: 0 auto 1.5rem;
       }
 
       .empty-title {
         font-size: 1.5rem;
         font-weight: 700;
-        color: #1f2937;
+        color: var(--text-primary);
         margin-bottom: 0.5rem;
       }
 
       .empty-description {
-        color: #6b7280;
+        color: var(--text-muted);
         margin-bottom: 2rem;
       }
 
       .empty-action-btn {
-        background: #f97316;
+        background: var(--primary-color);
         color: white;
         border: none;
         padding: 0.75rem 1.5rem;
@@ -172,7 +177,7 @@
         transition: background-color 0.2s ease;
 
         &:hover {
-          background: #ea580c;
+          background: var(--primary-hover);
         }
       }
     }
@@ -180,7 +185,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

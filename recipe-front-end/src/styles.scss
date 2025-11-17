@@ -28,6 +28,13 @@
 
   --spinner-bg: rgba(255, 255, 255, 0.3);
   --spinner-fg: rgba(255, 255, 255, 0.7);
+
+  --badge-bg: rgba(255, 255, 255, 0.95);
+  --badge-border: rgba(255, 255, 255, 0.8);
+  --success-color: #16a34a;
+  --rating-color: #fbbf24;
+  --rating-text: #92400e;
+  --accent-blue: rgba(99, 102, 241, 0.95);
 }
 
 .dark {
@@ -54,8 +61,16 @@
 
   --focus-ring: rgba(251, 146, 60, 0.2);
 
+  // Variables para spinner en dark mode (pueden mantenerse igual o ajustarse)
   --spinner-bg: rgba(255, 255, 255, 0.3);
   --spinner-fg: rgba(255, 255, 255, 0.7);
+
+  --badge-bg: rgba(55, 65, 81, 0.95);
+  --badge-border: rgba(75, 85, 99, 0.8);
+  --success-color: #22c55e;
+  --rating-color: #fbbf24;
+  --rating-text: #fef3c7;
+  --accent-blue: rgba(99, 102, 241, 0.8);
 }
 
 // Variables SCSS

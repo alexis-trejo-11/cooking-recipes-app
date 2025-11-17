@@ -34,7 +34,7 @@ export class OverviewComponent implements OnInit {
   loadStats(): void {
     const currentUser = this.authService.currentUser();
     if (currentUser) {
-      this.recipeService.getRecipesByAuthor(currentUser.id).subscribe({
+      this.recipeService.getRecipesByAuthor().subscribe({
         next: (page) => {
           const totalRating = page.recipes.reduce((sum, r) => sum + (r.average_rating || 0), 0);
           this.stats.set({
