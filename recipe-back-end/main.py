@@ -1,3 +1,4 @@
+from pathlib import Path
 import uvicorn
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Depends, HTTPException
@@ -22,12 +23,10 @@ app_stats = {"total_requests": 0, "blocked_requests": 0}
 
 
 origins = [
-    "http://localhost:3000",  # React dev server
-    "http://localhost:5173",  # Vite dev server
-    "http://localhost:8080",  # Vue dev server
-    "http://127.0.0.1:3000",  # React dev server
-    "http://127.0.0.1:5173",  # Vite dev server
-    "https://localhost:3000",  # React con HTTPS
+    "http://127.0.0.1:4200",  # Angular dev server
+    "https://127.0.0.1:4200",  # Angular dev server with HTTPS
+    "http://localhost:4200",  # Angular dev server
+    "https://localhost:4200",  # Angular dev server with HTTPS
 ]
 
 
@@ -117,5 +116,60 @@ app.include_router(auth_router, dependencies=[Depends(rate_limiter_dependency)])
 app.include_router(recipe_router, dependencies=[Depends(rate_limiter_dependency)])
 app.include_router(user_router, dependencies=[Depends(rate_limiter_dependency)])
 
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True, log_config=None)
+    BASE_DIR = Path(__file__).parent
+
+    try:
+        if settings.SSL_ENABLED and settings.SSL_KEYFILE and settings.SSL_CERTFILE:
+            ssl_keyfile_path = BASE_DIR / settings.SSL_KEYFILE
+            ssl_certfile_path = BASE_DIR / settings.SSL_CERTFILE
+
+            if not ssl_keyfile_path.exists():
+                raise FileNotFoundError(f"SSL key file not found: {ssl_keyfile_path}")
+            if not ssl_certfile_path.exists():
+                raise FileNotFoundError(f"SSL cert file not found: {ssl_certfile_path}")
+
+            print("Starting HTTPS server...")
+
+            # HTTPS
+            uvicorn.run(
+                "main:app",
+                host="0.0.0.0",
+                port=settings.SSL_PORT,
+                reload=True,
+                log_config=None,
+                ssl_keyfile=str(ssl_keyfile_path),
+                ssl_certfile=str(ssl_certfile_path),
+            )
+        else:
+            print("Starting HTTP server (SSL disabled)...")
+            # HTTP (fallback)
+            uvicorn.run(
+                "main:app",
+                host="0.0.0.0",
+                port=settings.SERVER_PORT,
+                reload=True,
+                log_config=None,
+            )
+
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        print("Falling back to HTTP...")
+        uvicorn.run(
+            "main:app",
+            host="0.0.0.0",
+            port=settings.SERVER_PORT,
+            reload=True,
+            log_config=None,
+        )
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        print("Falling back to HTTP...")
+        uvicorn.run(
+            "main:app",
+            host="0.0.0.0",
+            port=settings.SERVER_PORT,
+            reload=True,
+            log_config=None,
+        )

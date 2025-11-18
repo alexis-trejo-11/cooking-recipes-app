@@ -33,7 +33,7 @@ from app.modules.recipe.domain.models.value_objects.value_objects_standard impor
 )
 from app.utils.core.exceptions.modules import MappingException
 
-logger = logging.getLogger("app.modules.recipe")
+logger = logging.getLogger(__name__)
 
 
 class RecipeMapper:

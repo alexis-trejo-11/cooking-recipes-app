@@ -13,7 +13,7 @@ from ..value_objects.value_objects_standard import (
 from .enums import MealType
 from ...exceptions import RecipeDomainException
 
-logger = logging.getLogger("app.modules.recipe")
+logger = logging.getLogger(__name__)
 
 
 class TimeStamps:

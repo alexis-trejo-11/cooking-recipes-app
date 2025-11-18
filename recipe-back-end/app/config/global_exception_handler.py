@@ -21,7 +21,7 @@ from app.utils.core.exceptions.base import (
     NotFoundException,
 )
 
-logger = logging.getLogger("app.exceptions")
+logger = logging.getLogger(__name__)
 
 
 class ErrorDetail(BaseModel):

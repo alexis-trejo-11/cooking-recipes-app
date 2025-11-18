@@ -1,4 +1,5 @@
 import secrets
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from app.modules.auth.domain.user import User, UserRole, UserGender
@@ -24,6 +25,8 @@ from .exceptions import (
     UserNotFoundException,
     InvalidCredentialsException,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SignUpUseCase:
@@ -53,6 +56,9 @@ class SignUpUseCase:
         user_agent: Optional[str] = None,
     ) -> AuthResponse:
         """Execute user registration"""
+        logger.info(f"Attempting to sign up user: {request.email}")
+        logger.debug(f"Request details: {request.model_dump()}")
+
         if await self.user_repository.exists_by_email(request.email):
             raise UserAlreadyExistsException(
                 f"User with email {request.email} already exists"
@@ -288,8 +294,7 @@ class GetCurrentUserUseCase:
 
         return UserResponse(
             user_id=str(user.id.value),
-            first_name=user.first_name,
-            last_name=user.last_name,
+            full_name=f"{user.first_name} {user.last_name}",
             email=user.email,
             phone_number=user.phone_number,
             roles=[role.value for role in user.roles],

@@ -5,7 +5,7 @@ from decimal import Decimal
 from ...exceptions import RecipeDomainException
 
 
-logger = logging.getLogger("app.modules.recipe")
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)

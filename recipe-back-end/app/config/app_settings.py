@@ -1,6 +1,5 @@
 from pydantic_settings import BaseSettings
-from fastapi import FastAPI
-from app.config.global_exception_handler import GlobalExceptionHandler
+from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -17,6 +16,12 @@ class Settings(BaseSettings):
 
     RATE_LIMIT_ENABLED: bool = True
     DEFAULT_RATE_LIMIT: str = "default"
+
+    SSL_ENABLED: bool = False
+    SSL_KEYFILE: Optional[str] = None
+    SSL_CERTFILE: Optional[str] = None
+    SERVER_PORT: int = 8080
+    SSL_PORT: int = 8443
 
     class Config:
         env_file = ".env"

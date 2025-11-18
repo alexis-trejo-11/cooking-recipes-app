@@ -47,7 +47,7 @@ from app.modules.recipe.infrastructure.persistence.specification_builder import 
 )
 from app.utils.core.pagination import Page, PaginationParams
 
-logger = logging.getLogger("app.modules.recipe")
+logger = logging.getLogger(__name__)
 
 
 # TODO: DocStrings are not updated and don't raise ValueError.
