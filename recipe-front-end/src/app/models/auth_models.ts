@@ -25,5 +25,5 @@ export interface AuthSessionResponse {
   tokenType: string;
   accessToken: string;
   refreshToken: string;
-  userId: string;
+  userId?: string;
 }

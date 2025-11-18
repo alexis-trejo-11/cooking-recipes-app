@@ -1,14 +1,8 @@
-import { Component, inject, signal, ChangeDetectorRef, afterNextRender } from '@angular/core';
-import {
-  NavigationEnd,
-  NavigationStart,
-  Router,
-  RouterOutlet,
-  NavigationCancel,
-  NavigationError,
-} from '@angular/router';
-import { Header } from './shared/header/header';
-import { Footer } from './shared/footer/footer';
+import { Component, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { Header } from './components/shared/header/header';
+import { Footer } from './components/shared/footer/footer';
+import { filter } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -18,34 +12,16 @@ import { Footer } from './shared/footer/footer';
 })
 export class App {
   protected readonly title = signal('recipe-front-end');
-  private cdr = inject(ChangeDetectorRef);
-  private router = inject(Router);
+  showHeaderFooter = true;
 
-  constructor() {
-    this.router.events.subscribe((event) => {
-      console.log('🔵 [ROUTER EVENT]', event.constructor.name, event);
-
-      if (event instanceof NavigationStart) {
-        console.log('🟡 [NAV START] From:', this.router.url, 'To:', event.url);
-      }
-
-      if (event instanceof NavigationEnd) {
-        console.log('🟢 [NAV END] Current URL:', event.url);
-        this.cdr.detectChanges();
-      }
-
-      if (event instanceof NavigationCancel) {
-        console.log('🟠 [NAV CANCEL]', event.url, 'Reason:', event.reason);
-      }
-
-      if (event instanceof NavigationError) {
-        console.error('🔴 [NAV ERROR]', event.url, 'Error:', event.error);
-      }
-    });
-  }
-
-  onActivate(component: any) {
-    console.log('⚡ [ACTIVATE] Component:', component.constructor.name);
-    this.cdr.detectChanges();
+  constructor(private router: Router) {
+    this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe((event: NavigationEnd) => {
+        this.showHeaderFooter =
+          !event.url.startsWith('/dashboard') &&
+          !event.url.startsWith('/login') &&
+          !event.url.startsWith('/signup');
+      });
   }
 }

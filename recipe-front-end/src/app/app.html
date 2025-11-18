@@ -1,3 +1,11 @@
+@if (showHeaderFooter) {
 <app-header />
-<router-outlet (activate)="onActivate($event)" />
+}
+
+<main [class.flex-1]="showHeaderFooter">
+  <router-outlet />
+</main>
+
+@if (showHeaderFooter) {
 <app-footer />
+}

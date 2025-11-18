@@ -1,0 +1,84 @@
+<div class="recipe-grid-container">
+  <!-- Header -->
+  <div class="grid-header">
+    <h2 class="recipes-title">{{ title() }}</h2>
+
+    @if (showCreateButton() && !loading()) {
+    <a [routerLink]="createButtonLink()" class="create-btn" (click)="onCreateRecipe()">
+      {{ createButtonText() }}
+    </a>
+    }
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+  <div class="loading-state">
+    <div class="recipes-grid">
+      @for (i of [1,2,3,4,5,6]; track i) {
+      <div class="recipe-skeleton"></div>
+      }
+    </div>
+  </div>
+  }
+
+  <!-- Recipes Grid -->
+  @else if (recipes().length > 0) {
+  <div class="recipes-content">
+    <div class="recipes-grid">
+      @for (recipe of recipes(); track recipe.id) {
+      <app-recipe-card [recipe]="recipe" />
+      }
+    </div>
+
+    <!-- Pagination -->
+    @if (shouldShowPagination()) {
+    <div class="pagination">
+      <button
+        (click)="onPreviousPage()"
+        [disabled]="!pagination()?.previous_page"
+        class="pagination-btn prev-btn"
+      >
+        ← Previous
+      </button>
+
+      <span class="pagination-info">
+        Page {{ pagination()!.current_page }} of {{ pagination()!.total_pages }} ({{
+          pagination()!.total_items
+        }}
+        total)
+      </span>
+
+      <button
+        (click)="onNextPage()"
+        [disabled]="!pagination()?.next_page"
+        class="pagination-btn next-btn"
+      >
+        Next →
+      </button>
+    </div>
+    }
+  </div>
+  }
+
+  <!-- Empty State -->
+  @else if (shouldShowEmptyState()) {
+  <div class="empty-state">
+    <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+      />
+    </svg>
+    <h3 class="empty-title">{{ emptyMessage() }}</h3>
+    <p class="empty-description">Start exploring delicious recipes</p>
+
+    @if (showCreateButton()) {
+    <a [routerLink]="createButtonLink()" class="btn-primary" (click)="onCreateRecipe()">
+      {{ createButtonText() }}
+    </a>
+    }
+  </div>
+  }
+</div>

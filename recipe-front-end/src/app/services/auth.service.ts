@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { catchError, Observable, of, tap, throwError } from 'rxjs';
+import { catchError, Observable, of, Subject, switchMap, take, tap, throwError } from 'rxjs';
 import { User, UserProfile } from '../models/user_models';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../enviorments/enviroment';
@@ -23,6 +23,8 @@ export class AuthService {
 
   private tokenKey = 'auth_token';
   private refreshTokenKey = 'refresh_token';
+  private refreshInProgress = false;
+  private refreshSubject = new Subject<string>();
 
   constructor() {
     console.log('🔄 AuthService - Verificando estado de autenticación inicial');
@@ -35,10 +37,9 @@ export class AuthService {
       tap((response: any) => {
         console.log('✅ Login exitoso, respuesta completa:', response);
 
-        // ✅ Mapear los nombres de campos de snake_case a camelCase
         const mappedResponse: AuthSessionResponse = {
-          accessToken: response.access_token, // ✅ Mapear access_token → accessToken
-          refreshToken: response.refresh_token, // ✅ Mapear refresh_token → refreshToken
+          accessToken: response.access_token,
+          refreshToken: response.refresh_token,
           tokenType: response.token_type,
           userId: response.user_id,
         };
@@ -202,13 +203,132 @@ export class AuthService {
     return logoutRequest;
   }
 
+  private checkAndRefreshToken(): void {
+    const token = this.getAccessToken();
+
+    if (!token || !this.isAuthenticated()) {
+      return;
+    }
+
+    if (this.isTokenExpired()) {
+      console.log('🔄 Token expirado, intentando refresh...');
+      this.refreshToken().subscribe();
+    } else if (this.isTokenAboutToExpire()) {
+      console.log('🔄 Token por expirar, refrescando preventivamente...');
+      this.refreshToken().subscribe();
+    }
+  }
+
+  private isTokenAboutToExpire(): boolean {
+    const token = this.getAccessToken();
+    if (!token) return true;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const exp = payload.exp * 1000; // Convertir a milisegundos
+      const now = Date.now();
+      const timeUntilExpiry = exp - now;
+
+      // Refrescar si queda menos de 10 minutos
+      return timeUntilExpiry < 10 * 60 * 1000;
+    } catch {
+      return true;
+    }
+  }
+
+  refreshToken(): Observable<AuthSessionResponse> {
+    // Prevenir múltiples llamadas simultáneas de refresh
+    if (this.refreshInProgress) {
+      return this.refreshSubject.asObservable().pipe(
+        take(1),
+        switchMap((token) =>
+          of({
+            accessToken: token,
+            refreshToken: this.getRefreshToken() || '',
+            tokenType: 'bearer',
+          })
+        )
+      );
+    }
+
+    this.refreshInProgress = true;
+    const refreshToken = this.getRefreshToken();
+
+    if (!refreshToken) {
+      console.error('No hay refresh token disponible');
+      this.clearAuthData();
+      return throwError(() => new Error('No refresh token available'));
+    }
+
+    console.log('🔄 Refrescando token...');
+
+    return this.http.post<any>(`${this.apiURL}/refresh`, { refreshToken }).pipe(
+      tap((response: any) => {
+        console.log('Token refrescado exitosamente');
+
+        const mappedResponse: AuthSessionResponse = {
+          accessToken: response.access_token,
+          refreshToken: response.refresh_token,
+          tokenType: response.token_type,
+        };
+
+        this.setTokens(mappedResponse.accessToken, mappedResponse.refreshToken);
+        this.refreshInProgress = false;
+        this.refreshSubject.next(mappedResponse.accessToken);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error refrescando token:', error);
+        this.refreshInProgress = false;
+
+        // Si el refresh token también expiró, hacer logout
+        if (error.status === 401) {
+          console.log('Refresh token expirado, cerrando sesión...');
+          this.clearAuthData();
+        }
+
+        return this.handleError(error);
+      })
+    );
+  }
+
+  getValidAccessToken(): Observable<string> {
+    const token = this.getAccessToken();
+
+    if (!token) {
+      return throwError(() => new Error('No token available'));
+    }
+
+    if (!this.isTokenAboutToExpire()) {
+      return of(token);
+    }
+
+    return this.refreshToken().pipe(switchMap((response) => of(response.accessToken)));
+  }
+
+  getTokenInfo(): { exp: number; iat: number; sub: string; email: string } | null {
+    const token = this.getAccessToken();
+    if (!token) return null;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return {
+        exp: payload.exp,
+        iat: payload.iat,
+        sub: payload.sub,
+        email: payload.email,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   private setTokens(accessToken: string, refreshToken: string) {
     console.log('💾 Guardando tokens en localStorage');
     localStorage.setItem(this.tokenKey, accessToken);
     localStorage.setItem(this.refreshTokenKey, refreshToken);
   }
 
-  private clearAuthData(): void {
+  public clearAuthData(): void {
     console.log('🧹 Limpiando datos de autenticación');
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.refreshTokenKey);

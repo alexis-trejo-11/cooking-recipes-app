@@ -1,0 +1,16 @@
+<div class="user-recipes-container">
+  <div class="grid-container">
+    <app-recipe-grid
+      [title]="'My Recipes'"
+      [recipes]="userRecipes()"
+      [pagination]="pagination()"
+      [loading]="loadingRecipes()"
+      [showCreateButton]="true"
+      [emptyMessage]="'No recipes yet'"
+      [createButtonText]="'Create Recipe'"
+      [createButtonLink]="'/create'"
+      (pageChanged)="onPageChanged($event)"
+      (createRecipe)="onCreateRecipe()"
+    />
+  </div>
+</div>
