@@ -7,18 +7,23 @@ import { Singup } from './components/pages/auth/singup/singup';
 import { About } from './components/shared/about/about';
 import { authGuard } from './guards/auth.guard';
 import { publicGuard } from './guards/public.guard';
-import { CreateRecipe } from './components/pages/recipe/create-recipe/create-recipe';
 import { DashboardLayout } from './components/pages/user/dashboard/layout/dashboard-layout';
 import { Overview } from './components/pages/user/dashboard/overview/overview';
 import { Profile } from './components/pages/user/profile/profile';
 import { EditRecipe } from './components/pages/user/edit-recipe/edit-recipe';
 import { MyRecipes } from './components/pages/user/my-recipes/my-recipes';
 import { MyFavorites } from './components/pages/user/my-favorites/my-favorites';
+import { CreateRecipe } from './components/pages/user/create-recipe/create-recipe';
+import { RateLimit } from './components/pages/rate-limit/rate-limit';
 
 export const routes: Routes = [
   {
     path: '',
     component: Home,
+  },
+  {
+    path: 'rate-limiter',
+    component: RateLimit,
   },
   {
     path: 'recipes',
@@ -57,7 +62,7 @@ export const routes: Routes = [
         component: Overview,
       },
       {
-        path: 'create',
+        path: 'create-recipe',
         component: CreateRecipe,
       },
       {

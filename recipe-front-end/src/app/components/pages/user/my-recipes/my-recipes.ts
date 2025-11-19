@@ -35,9 +35,6 @@ export class MyRecipes implements OnInit {
   }
 
   loadUserRecipes(userId: string, page: number, pageSize: number): void {
-    console.log('🍳 Cargando recetas del usuario:', { userId, page, pageSize });
-    this.loadingRecipes.set(true);
-
     this.recipeService.getRecipesByAuthor().subscribe({
       next: (recipePage: RecipeSummaryPage) => {
         console.log('Recetas cargadas exitosamente:', recipePage);
@@ -47,38 +44,18 @@ export class MyRecipes implements OnInit {
         this.userRecipes.set(recipePage.recipes);
         this.pagination.set(recipePage.pagination);
         this.loadingRecipes.set(false);
-        console.log('🔴 LoadingRecipes establecido en:', false);
+        console.log(' LoadingRecipes establecido en:', false);
       },
       error: (error) => {
-        console.error('❌ Error cargando recetas:', error);
+        console.error(' Error cargando recetas:', error);
         this.loadingRecipes.set(false);
-        console.log('🔴 LoadingRecipes establecido en:', false);
+        console.log(' LoadingRecipes establecido en:', false);
       },
     });
   }
 
-  nextPage(): void {
-    if (this.pagination()?.next_page) {
-      this.currentPage = this.pagination()!.next_page!;
-      const currentUser = this.authService.currentUser();
-      if (currentUser) {
-        this.loadUserRecipes(currentUser.id, this.currentPage, this.pageSize);
-      }
-    }
-  }
-
-  previousPage(): void {
-    if (this.pagination()?.previous_page) {
-      this.currentPage = this.pagination()!.previous_page!;
-      const currentUser = this.authService.currentUser();
-      if (currentUser) {
-        this.loadUserRecipes(currentUser.id, this.currentPage, this.pageSize);
-      }
-    }
-  }
-
   onPageChanged(newPage: number): void {
-    console.log('📄 Profile: Cambiando a página:', newPage);
+    console.log('Cambiando a página:', newPage);
     this.currentPage = newPage;
     const currentUser = this.authService.currentUser();
     if (currentUser) {

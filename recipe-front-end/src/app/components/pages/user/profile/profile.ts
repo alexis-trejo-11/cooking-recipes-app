@@ -1,16 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { RecipeCard } from '../../../shared/recipe-card/recipe-card';
 import { UserService } from '../../../../services/user.service';
 import { AuthService } from '../../../../services/auth.service';
-import { RecipeService } from '../../../../services/recipe.service';
-import {
-  PaginationResponse,
-  RecipeSummary,
-  RecipeSummaryPage,
-} from '../../../../models/recipe_models';
 import { UpdateProfile, UserProfile } from '../../../../models/user_models';
 
 @Component({

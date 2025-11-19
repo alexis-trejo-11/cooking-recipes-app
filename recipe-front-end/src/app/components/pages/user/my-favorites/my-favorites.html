@@ -1,1 +1,11 @@
-<p>my-favorites works!</p>
+<app-recipe-grid
+  [title]="'Favorite Recipes'"
+  [recipes]="favoriteRecipes()"
+  [pagination]="favoritesPagination()"
+  [loading]="loadingFavorites()"
+  [showCreateButton]="false"
+  [emptyMessage]="'No favorite recipes yet'"
+  [createButtonText]="'Explore Recipes'"
+  [createButtonLink]="'/recipes'"
+  (pageChanged)="onFavoritesPageChanged($event)"
+/>

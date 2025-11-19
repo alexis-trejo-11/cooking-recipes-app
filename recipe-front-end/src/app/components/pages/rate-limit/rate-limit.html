@@ -1,0 +1,46 @@
+<div class="error-container">
+  <div class="error-content">
+    <div class="error-icon">
+      <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"
+        />
+      </svg>
+    </div>
+
+    <h1 class="error-title">Rate Limit Exceeded</h1>
+    <p class="error-description">
+      {{ errorMessage() }}
+    </p>
+
+    @if (isCounting()) {
+    <div class="countdown-section">
+      <p class="countdown-text">Please wait</p>
+      <div class="countdown-timer">
+        <span class="countdown-number">{{ countdown() }}</span>
+        <span class="countdown-label">seconds</span>
+      </div>
+      <p class="countdown-hint">before trying again</p>
+    </div>
+    }
+
+    <div class="error-actions">
+      @if (!isCounting()) {
+      <button (click)="tryAgain()" class="btn-primary try-again-btn">Try Again</button>
+      }
+    </div>
+    <button (click)="goHome()" class="btn-secondary">Go Home</button>
+
+    <div class="error-info">
+      <h3 class="info-title">Why did this happen?</h3>
+      <ul class="info-list">
+        <li>You've made too many requests in a short period</li>
+        <li>This is to protect our service from abuse</li>
+        <li>The limit will reset automatically</li>
+      </ul>
+    </div>
+  </div>
+</div>

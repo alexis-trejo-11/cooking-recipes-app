@@ -14,7 +14,6 @@ export const authInterceptor: HttpInterceptorFn = (
 ) => {
   const authService = inject(AuthService);
 
-  // Solo intervenir en peticiones a nuestra API
   if (!req.url.includes('/api/')) {
     return next(req);
   }

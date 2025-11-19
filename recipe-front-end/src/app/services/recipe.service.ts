@@ -22,17 +22,31 @@ export class RecipeService {
   getRecipesByAuthor(): Observable<RecipeSummaryPage> {
     const token = this.getAccessToken();
     if (!token) {
-      console.error('❌ No hay token disponible para obtener el usuario');
+      console.error('No hay token disponible para obtener el usuario');
       return throwError(() => new Error('No authentication token available'));
     }
 
-    console.log('🔐 Token disponible:', token.substring(0, 20) + '...');
-
+    console.log('Token disponible:', token.substring(0, 20) + '...');
     const headers = {
       Authorization: `Bearer ${token}`,
     };
 
     return this.http.get<RecipeSummaryPage>(`${this.apiUrl}/user/`, { headers });
+  }
+
+  getUserFavoriteRecipes(pageNumber: number, pageSize: number): Observable<RecipeSummaryPage> {
+    const token = this.getAccessToken();
+    if (!token) {
+      console.error('No hay token disponible para obtener el usuario');
+      return throwError(() => new Error('No authentication token available'));
+    }
+
+    console.log('Token disponible:', token.substring(0, 5) + '...');
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+
+    return this.http.get<RecipeSummaryPage>(`${this.apiUrl}/favorites/`, { headers });
   }
 
   getFeaturedRecipes(): Observable<RecipeSummary[]> {
