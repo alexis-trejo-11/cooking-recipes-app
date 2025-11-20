@@ -1,0 +1,288 @@
+<div class="recipe-form-container">
+  <div class="recipe-form-content">
+    <div class="recipe-form-card">
+      <h1 class="recipe-form-title">{{ title }}</h1>
+      <p class="recipe-form-subtitle">
+        {{
+          isEditMode
+            ? 'Update your culinary masterpiece'
+            : 'Share your culinary masterpiece with the community'
+        }}
+      </p>
+
+      <form (ngSubmit)="submitRecipe()" #recipeForm="ngForm" class="recipe-form">
+        <div class="form-sections">
+          <!-- Basic Information -->
+          <div class="form-section">
+            <label class="form-label">Recipe Name *</label>
+            <input
+              type="text"
+              [(ngModel)]="recipeData.name"
+              name="name"
+              required
+              class="form-input"
+              placeholder="Enter recipe name"
+            />
+          </div>
+
+          <div class="form-section">
+            <label class="form-label">Description</label>
+            <textarea
+              [(ngModel)]="recipeData.description"
+              name="description"
+              rows="4"
+              class="form-textarea"
+              placeholder="Describe your recipe..."
+            ></textarea>
+          </div>
+
+          <!-- Cooking Details -->
+          <div class="form-grid-three">
+            <div class="form-section">
+              <label class="form-label">Prep Time (min) *</label>
+              <input
+                type="number"
+                [(ngModel)]="recipeData.cookingTime.prepMinutes"
+                name="prepMinutes"
+                required
+                min="0"
+                class="form-input"
+              />
+            </div>
+
+            <div class="form-section">
+              <label class="form-label">Cook Time (min) *</label>
+              <input
+                type="number"
+                [(ngModel)]="recipeData.cookingTime.cookMinutes"
+                name="cookMinutes"
+                required
+                min="0"
+                class="form-input"
+              />
+            </div>
+
+            <div class="form-section">
+              <label class="form-label">Servings *</label>
+              <input
+                type="number"
+                [(ngModel)]="recipeData.servings"
+                name="servings"
+                required
+                min="1"
+                class="form-input"
+              />
+            </div>
+          </div>
+
+          <!-- Difficulty and Cuisine -->
+          <div class="form-grid-two">
+            <div class="form-section">
+              <label class="form-label">Difficulty *</label>
+              <select
+                [(ngModel)]="recipeData.difficulty"
+                name="difficulty"
+                required
+                class="form-select"
+              >
+                @for (level of difficultyLevels; track $index) {
+                <option [value]="level">
+                  {{ level }}
+                </option>
+                }
+              </select>
+            </div>
+
+            <div class="form-section">
+              <label class="form-label">Cuisine *</label>
+              <select [(ngModel)]="recipeData.cuisine" name="cuisine" required class="form-select">
+                @for (cuisine of cuisineTypes; track $index) {
+                <option [value]="cuisine">
+                  {{ cuisine }}
+                </option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Meal Types -->
+          <div class="form-section">
+            <label class="form-label">Meal Types *</label>
+            <div class="meal-types-grid">
+              @for (mealType of availableMealTypes; track $index) {
+              <button
+                type="button"
+                (click)="toggleMealType(mealType)"
+                [class.active]="mealTypes().includes(mealType)"
+                class="meal-type-btn"
+              >
+                {{ mealType }}
+              </button>
+              }
+            </div>
+          </div>
+
+          <!-- Image URL -->
+          <div class="form-section">
+            <label class="form-label">Image URL</label>
+            <input
+              type="url"
+              [(ngModel)]="recipeData.imageUrl"
+              name="imageUrl"
+              class="form-input"
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
+
+          <!-- Ingredients -->
+          <div class="form-section">
+            <label class="section-title">Ingredients *</label>
+            <div class="ingredients-list">
+              @for (ingredient of ingredients(); track $index; let i = $index) {
+              <div class="ingredient-item">
+                <div class="ingredient-main">
+                  <input
+                    type="text"
+                    [(ngModel)]="ingredient.name"
+                    [name]="'ingredient-name-' + i"
+                    placeholder="Ingredient name"
+                    class="ingredient-name"
+                    required
+                  />
+                  <div class="ingredient-quantity">
+                    <input
+                      type="text"
+                      [(ngModel)]="ingredient.quantity.value"
+                      [name]="'ingredient-quantity-' + i"
+                      placeholder="0"
+                      class="quantity-input"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="ingredient.quantity.unit"
+                      [name]="'ingredient-unit-' + i"
+                      placeholder="unit"
+                      class="unit-input"
+                    />
+                  </div>
+                </div>
+
+                <div class="ingredient-options">
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="ingredient.isOptional"
+                      [name]="'ingredient-optional-' + i"
+                    />
+                    Optional
+                  </label>
+
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="ingredient.properties.isVegan"
+                      [name]="'ingredient-vegan-' + i"
+                    />
+                    Vegan
+                  </label>
+                </div>
+
+                <button type="button" (click)="removeIngredient(i)" class="remove-btn">
+                  <svg class="remove-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              </div>
+              }
+            </div>
+            <button type="button" (click)="addIngredient()" class="add-item-btn">
+              + Add Ingredient
+            </button>
+          </div>
+
+          <!-- Instructions -->
+          <div class="form-section">
+            <label class="section-title">Instructions *</label>
+            <div class="steps-list">
+              @for (step of steps(); track $index; let i = $index) {
+              <div class="step-item">
+                <div class="step-number">
+                  {{ i + 1 }}
+                </div>
+                <textarea
+                  [(ngModel)]="step.description"
+                  [name]="'step-description-' + i"
+                  rows="3"
+                  placeholder="Describe this step..."
+                  class="step-textarea"
+                  required
+                ></textarea>
+                <button type="button" (click)="removeStep(i)" class="remove-btn">
+                  <svg class="remove-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              </div>
+              }
+            </div>
+            <button type="button" (click)="addStep()" class="add-item-btn">+ Add Step</button>
+          </div>
+
+          <!-- Tags -->
+          <div class="form-section">
+            <label class="section-title">Tags</label>
+            <div class="tags-list">
+              @for (tag of tags(); track $index; let i = $index) {
+              <div class="tag-item">
+                <input
+                  type="text"
+                  [(ngModel)]="tag.name"
+                  [name]="'tag-name-' + i"
+                  placeholder="Tag name"
+                  class="tag-input"
+                />
+                <input
+                  type="text"
+                  [(ngModel)]="tag.description"
+                  [name]="'tag-desc-' + i"
+                  placeholder="Tag description (optional)"
+                  class="tag-desc-input"
+                />
+                <button type="button" (click)="removeTag(i)" class="remove-btn">
+                  <svg class="remove-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              </div>
+              }
+            </div>
+            <button type="button" (click)="addTag()" class="add-item-btn">+ Add Tag</button>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button type="submit" [disabled]="!recipeForm.valid || loading()" class="submit-btn">
+              {{ submitButtonText }}
+            </button>
+            <button type="button" (click)="cancel()" class="cancel-btn">Cancel</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

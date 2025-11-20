@@ -10,6 +10,7 @@ import { provideClientHydration, withEventReplay } from '@angular/platform-brows
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { rateLimitInterceptor } from './interceptors/rate-limiter.interceptor';
+import { caseInterceptor } from './interceptors/case.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -23,6 +24,6 @@ export const appConfig: ApplicationConfig = {
       })
     ),
     provideClientHydration(withEventReplay()),
-    provideHttpClient(withInterceptors([authInterceptor, rateLimitInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, rateLimitInterceptor, caseInterceptor])),
   ],
 };

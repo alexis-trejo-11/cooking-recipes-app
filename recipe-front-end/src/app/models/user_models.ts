@@ -8,31 +8,31 @@ export interface User {
 
 export interface UserProfile {
   id: string; // id (alias)
-  full_name: string;
-  profile_picture_url?: string | null;
+  fullName: string;
+  profilePictureUrl?: string | null;
   bio?: string | null;
-  date_of_birth?: string | null; // ISO datetime
+  dateOfBirth?: string | null; // ISO datetime
   gender?: string | null;
 
   email: string;
-  phone_number?: string | null;
+  phoneNumber?: string | null;
 
-  joined_at: string; // ISO datetime
-  last_login?: string | null; // ISO datetime
+  joinedAt: string; // ISO datetime
+  lastLogin?: string | null; // ISO datetime
 
-  favorite_recipes_count: number;
-  created_recipes_count: number;
-  reviewed_recipes_count: number;
+  favoriteRecipesCount: number;
+  createdRecipesCount: number;
+  reviewedRecipesCount: number;
 }
 
 export interface UpdateProfile {
-  user_id: string; // id (alias)
-  full_name: string;
-  profile_picture_url?: string | null;
+  userId: string; // id (alias)
+  fullName: string;
+  profilePictureUrl?: string | null;
   bio?: string | null;
-  date_of_birth?: string | null; // ISO datetime
+  dateOfBirth?: string | null; // ISO datetime
   gender?: string | null;
 
   email: string;
-  phone_number?: string | null;
+  phoneNumber?: string | null;
 }

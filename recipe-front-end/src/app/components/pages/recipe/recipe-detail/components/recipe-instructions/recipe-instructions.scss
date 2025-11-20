@@ -1,0 +1,77 @@
+.recipe-card {
+  background: var(--bg-secondary);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+
+  &.instructions-card {
+    .section-title {
+      font-size: 1.875rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 1.5rem;
+    }
+
+    .instructions-list {
+      .instruction-step {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .step-number {
+          flex-shrink: 0;
+          width: 2.5rem;
+          height: 2.5rem;
+          background: linear-gradient(135deg, var(--primary-color), #ef4444);
+          color: white;
+          border-radius: 9999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 0.875rem;
+        }
+
+        .step-content {
+          flex: 1;
+
+          .step-text {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+          }
+
+          .step-duration {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .instructions-card {
+    padding: 1.5rem !important;
+
+    .section-title {
+      font-size: 1.5rem !important;
+    }
+
+    .instruction-step {
+      flex-direction: column;
+      gap: 0.75rem !important;
+
+      .step-number {
+        align-self: flex-start;
+      }
+    }
+  }
+}

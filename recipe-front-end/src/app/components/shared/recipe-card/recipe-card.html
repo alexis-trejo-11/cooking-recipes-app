@@ -1,6 +1,6 @@
 <article class="recipe-card">
   <div class="card-image-container">
-    <img [src]="recipe().image_url" [alt]="recipe().name" class="card-image" />
+    <img [src]="recipe().imageUrl" [alt]="recipe().name" class="card-image" />
 
     <!-- Difficulty Badge -->
     <div class="difficulty-badge {{ getDifficultyClass(recipe().difficulty) }}">
@@ -8,20 +8,20 @@
     </div>
 
     <!-- Rating Badge -->
-    @if (recipe().average_rating > 0) {
+    @if (recipe().averageRating > 0) {
     <div class="rating-badge">
       <svg class="star-icon" viewBox="0 0 20 20">
         <path
           d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"
         />
       </svg>
-      <span class="rating-value">{{ recipe().average_rating.toFixed(1) }}</span>
+      <span class="rating-value">{{ recipe().averageRating.toFixed(1) }}</span>
     </div>
     }
 
     <!-- Meal Type Badge -->
     <div class="meal-type-badge">
-      {{ getMealTypeText(recipe().meal_types[0]) }}
+      {{ getMealTypeText(recipe().mealTypes[0]) }}
     </div>
   </div>
 
@@ -48,7 +48,7 @@
             d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
           />
         </svg>
-        <span class="stat-text">{{ formatNumber(recipe().view_count) }} views</span>
+        <span class="stat-text">{{ formatNumber(recipe().viewCount) }} views</span>
       </div>
 
       <!-- Favorites -->
@@ -61,7 +61,7 @@
             d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
           />
         </svg>
-        <span class="stat-text">{{ formatNumber(recipe().favorite_count) }} favorites</span>
+        <span class="stat-text">{{ formatNumber(recipe().favoriteCount) }} favorites</span>
       </div>
     </div>
   </div>

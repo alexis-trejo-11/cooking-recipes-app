@@ -94,7 +94,7 @@
         @for (recipe of recentRecipes(); track recipe.id) {
         <a [routerLink]="['/recipes', recipe.id]" class="recipe-item">
           <img
-            [src]="recipe.image_url || 'assets/placeholder-recipe.jpg'"
+            [src]="recipe.imageUrl || 'assets/placeholder-recipe.jpg'"
             [alt]="recipe.name"
             class="recipe-image"
           />
@@ -104,17 +104,15 @@
             </h3>
             <p class="recipe-description">{{ recipe.description }}</p>
             <div class="recipe-meta">
-              <span
-                >{{ (recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0) }} min</span
-              >
-              @if (recipe.rating_count) {
+              <span>{{ (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0) }} min</span>
+              @if (recipe.ratingCount) {
               <span class="recipe-rating">
                 <svg class="star-icon" viewBox="0 0 20 20">
                   <path
                     d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"
                   />
                 </svg>
-                {{ (recipe.average_rating || 0).toFixed(1) }}
+                {{ (recipe.averageRating || 0).toFixed(1) }}
               </span>
               }
             </div>

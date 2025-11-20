@@ -45,7 +45,7 @@ export class Recipes implements OnInit {
 
   page = signal<RecipeSummaryPage>({
     recipes: [],
-    pagination: { total_items: 0, total_pages: 0, current_page: 0, page_size: 0 },
+    pagination: { totalItems: 0, totalPages: 0, currentPage: 0, pageSize: 0 },
   });
   filters: SearchFilters = {
     query: '',

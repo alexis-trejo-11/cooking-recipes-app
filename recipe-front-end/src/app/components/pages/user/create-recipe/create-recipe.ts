@@ -1,33 +1,46 @@
 import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { RecipeService } from '../../../../services/recipe.service';
-import { AuthService } from '../../../../services/auth.service';
-import { Ingredient, Step } from '../../../../models/recipe_models';
+import { RecipeForm } from '../../../shared/recipe-form/recipe-form';
+import { CreateRecipeRequest, UpdateRecipeRequest } from '../../../../models/recipe_models';
 
 @Component({
   selector: 'app-create-recipe',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './create-recipe.html',
-  styleUrls: ['./create-recipe.scss'],
+  imports: [RecipeForm],
+  template: `
+    <app-recipe-form
+      mode="create"
+      [loading]="submitting"
+      (formSubmit)="onFormSubmit($event)"
+      (formCancel)="onFormCancel()"
+    />
+  `,
 })
 export class CreateRecipe {
   private recipeService = inject(RecipeService);
-  private authService = inject(AuthService);
   router = inject(Router);
 
-  recipeData: any = {
-    title: '',
-    description: '',
-    prepTime: 0,
-    cookTime: 0,
-    servings: 1,
-    difficulty: 'Easy',
-    cuisine: '',
-    imageUrl: '',
-    ingredients: [],
-    steps: [],
-  };
+  submitting = false;
+
+  onFormSubmit(recipeData: CreateRecipeRequest | UpdateRecipeRequest) {
+    this.submitting = true;
+
+    this.recipeService.createRecipe(recipeData as CreateRecipeRequest).subscribe({
+      next: (createdRecipeId) => {
+        console.log('Recipe Created With ID:', createdRecipeId);
+        this.submitting = false;
+        this.router.navigate(['/recipes', createdRecipeId]);
+      },
+      error: (error) => {
+        console.error('Error creating recipe:', error);
+        this.submitting = false;
+        alert('There was an error creating the recipe. Please try again.');
+      },
+    });
+  }
+
+  onFormCancel(): void {
+    this.router.navigate(['/recipes']);
+  }
 }

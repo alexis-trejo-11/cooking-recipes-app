@@ -62,7 +62,7 @@ export const routes: Routes = [
         component: Overview,
       },
       {
-        path: 'create-recipe',
+        path: 'create',
         component: CreateRecipe,
       },
       {

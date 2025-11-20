@@ -26,17 +26,17 @@ export class RecipeGrid {
 
   onNextPage(): void {
     const pagination = this.pagination();
-    if (pagination?.next_page) {
-      console.log(`➡️ RecipeGrid: Navegando a página ${pagination.next_page}`);
-      this.pageChanged.emit(pagination.next_page);
+    if (pagination?.nextPage) {
+      console.log(`➡️ RecipeGrid: Navegando a página ${pagination.nextPage}`);
+      this.pageChanged.emit(pagination.nextPage);
     }
   }
 
   onPreviousPage(): void {
     const pagination = this.pagination();
-    if (pagination?.previous_page) {
-      console.log(`⬅️ RecipeGrid: Navegando a página ${pagination.previous_page}`);
-      this.pageChanged.emit(pagination.previous_page);
+    if (pagination?.previousPage) {
+      console.log(` RecipeGrid: Navegando a página ${pagination.previousPage}`);
+      this.pageChanged.emit(pagination.previousPage);
     }
   }
 
@@ -47,7 +47,7 @@ export class RecipeGrid {
 
   shouldShowPagination(): boolean {
     const pagination = this.pagination();
-    return !!pagination && pagination.total_pages > 1;
+    return !!pagination && pagination.totalPages > 1;
   }
 
   shouldShowEmptyState(): boolean {

@@ -36,7 +36,7 @@ export class Overview implements OnInit {
     if (currentUser) {
       this.recipeService.getRecipesByAuthor().subscribe({
         next: (page) => {
-          const totalRating = page.recipes.reduce((sum, r) => sum + (r.average_rating || 0), 0);
+          const totalRating = page.recipes.reduce((sum, r) => sum + (r.averageRating || 0), 0);
           this.stats.set({
             totalRecipes: page.recipes.length,
             totalFavorites: page.recipes.filter((r) => r).length,

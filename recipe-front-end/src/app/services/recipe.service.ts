@@ -1,5 +1,10 @@
 import { inject, Injectable } from '@angular/core';
-import { Recipe, RecipeSummary, RecipeSummaryPage } from '../models/recipe_models';
+import {
+  CreateRecipeRequest,
+  Recipe,
+  RecipeSummary,
+  RecipeSummaryPage,
+} from '../models/recipe_models';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { environment } from '../../enviorments/enviroment';
@@ -15,7 +20,7 @@ export class RecipeService {
     return this.http.get<RecipeSummaryPage>(this.apiUrl);
   }
 
-  getRecipesById(id: number): Observable<Recipe> {
+  getRecipeById(id: string): Observable<Recipe> {
     return this.http.get<Recipe>(`${this.apiUrl}/${id}`);
   }
 
@@ -31,7 +36,7 @@ export class RecipeService {
       Authorization: `Bearer ${token}`,
     };
 
-    return this.http.get<RecipeSummaryPage>(`${this.apiUrl}/user/`, { headers });
+    return this.http.get<RecipeSummaryPage>(`${this.apiUrl}/my/`, { headers });
   }
 
   getUserFavoriteRecipes(pageNumber: number, pageSize: number): Observable<RecipeSummaryPage> {
@@ -46,14 +51,34 @@ export class RecipeService {
       Authorization: `Bearer ${token}`,
     };
 
-    return this.http.get<RecipeSummaryPage>(`${this.apiUrl}/favorites/`, { headers });
+    return this.http.get<RecipeSummaryPage>(`${this.apiUrl}/my/favorites/`, { headers });
   }
 
   getFeaturedRecipes(): Observable<RecipeSummary[]> {
     return this.http.get<RecipeSummary[]>(`${this.apiUrl}/featured`);
   }
 
-  deleteRecipe(): Observable<void> {
+  createRecipe(recipeData: CreateRecipeRequest): Observable<number> {
+    const headers = this.addAuthHeader();
+    return this.http.post<number>(this.apiUrl, recipeData, { headers });
+  }
+
+  updateRecipe(recipeId: string, recipeData: CreateRecipeRequest): Observable<Recipe> {
+    const headers = this.addAuthHeader();
+    return this.http.put<Recipe>(`${this.apiUrl}/${recipeId}`, recipeData, { headers });
+  }
+
+  toggleFavorite(recipeId: string): Observable<void> {
+    const headers = this.addAuthHeader();
+    return this.http.patch<void>(`${this.apiUrl}/${recipeId}/favorites/toggle`, {}, { headers });
+  }
+
+  isFavorite(recipeId: string): Observable<boolean> {
+    const headers = this.addAuthHeader();
+    return this.http.get<boolean>(`${this.apiUrl}/is_favorite/${recipeId}`, { headers });
+  }
+
+  deleteRecipe(recipeId: string): Observable<void> {
     return of();
   }
 

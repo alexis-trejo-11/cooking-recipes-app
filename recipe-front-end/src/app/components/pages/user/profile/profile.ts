@@ -22,8 +22,8 @@ export class Profile implements OnInit {
   saving = signal(false);
 
   editData: UpdateProfile = {
-    user_id: '',
-    full_name: '',
+    userId: '',
+    fullName: '',
     email: '',
   };
 
@@ -57,14 +57,14 @@ export class Profile implements OnInit {
     const current = this.profile();
     if (current) {
       this.editData = {
-        user_id: current.id,
-        full_name: current.full_name,
+        userId: current.id,
+        fullName: current.fullName,
         email: current.email,
         bio: current.bio || '',
-        phone_number: current.phone_number || '',
-        date_of_birth: current.date_of_birth || '',
+        phoneNumber: current.phoneNumber || '',
+        dateOfBirth: current.dateOfBirth || '',
         gender: current.gender || '',
-        profile_picture_url: current.profile_picture_url || '',
+        profilePictureUrl: current.profilePictureUrl || '',
       };
       this.editing.set(true);
     }
@@ -73,8 +73,8 @@ export class Profile implements OnInit {
   cancelEdit(): void {
     this.editing.set(false);
     this.editData = {
-      user_id: '',
-      full_name: '',
+      userId: '',
+      fullName: '',
       email: '',
     };
   }

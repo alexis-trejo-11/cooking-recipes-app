@@ -1,9 +1,15 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { RecipeService } from '../../../../services/recipe.service';
 import { Ingredient, Recipe } from '../../../../models/recipe_models';
+import { AuthService } from '../../../../services/auth.service';
+import { RecipeHero } from './components/recipe-hero/recipe-hero';
+import { RecipeStats } from './components/recipe-stats/recipe-stats';
+import { RecipeIngredients } from './components/recipe-ingredients/recipe-ingredients';
+import { RecipeInstructions } from './components/recipe-instructions/recipe-instructions';
+import { RecipeSidebar } from './components/recipe-sidebar/recipe-sidebar';
 
 interface RecipeStat {
   icon: string;
@@ -16,7 +22,16 @@ interface RecipeStat {
 @Component({
   selector: 'app-recipe-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    RecipeHero,
+    RecipeStats,
+    RecipeIngredients,
+    RecipeSidebar,
+    RecipeInstructions,
+  ],
   templateUrl: './recipe-detail.html',
   styleUrls: ['./recipe-detail.scss'],
 })
@@ -24,94 +39,98 @@ export class RecipeDetail implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private recipeService = inject(RecipeService);
+  private authService = inject(AuthService);
 
   recipe = signal<Recipe | null>(null);
   loading = signal(true);
   scaledServings = signal(1);
-  userRating = signal(0);
-
-  recipeStats = computed<RecipeStat[]>(() => {
-    const recipe = this.recipe();
-    if (!recipe) return [];
-
-    return [
-      {
-        icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
-        label: 'Prep Time',
-        value: `${recipe.prep_time_minutes} min`,
-        bgColor: 'orange',
-        iconColor: 'orange',
-      },
-      {
-        icon: 'M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z',
-        label: 'Cook Time',
-        value: `${recipe.cook_time_minutes} min`,
-        bgColor: 'red',
-        iconColor: 'red',
-      },
-      {
-        icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
-        label: 'Servings',
-        value: this.scaledServings(),
-        bgColor: 'blue',
-        iconColor: 'blue',
-      },
-    ];
-  });
-
-  stars = [1, 2, 3, 4, 5];
+  isFavorite = signal(false);
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    console.log('Recipe ID from route:', id);
-    if (id) {
-      this.loadRecipe(+id);
-    }
+    this.loadRecipe();
   }
 
-  loadRecipe(id: number): void {
-    this.recipeService.getRecipesById(id).subscribe({
-      next: (recipe: Recipe) => {
+  get isUserLoggedIn(): boolean {
+    return this.authService.isAuthenticated();
+  }
+
+  get isUserRecipeAuthor(): boolean {
+    const currentUser = this.authService.currentUser();
+    const recipe = this.recipe();
+    return !!currentUser && !!recipe && currentUser.id === recipe.authorId;
+  }
+
+  private loadRecipe(): void {
+    const recipeId = this.route.snapshot.paramMap.get('id');
+    if (!recipeId) {
+      this.loading.set(false);
+      return;
+    }
+
+    this.recipeService.getRecipeById(recipeId).subscribe({
+      next: (recipe) => {
         this.recipe.set(recipe);
         this.scaledServings.set(recipe.servings || 1);
+        this.checkIfFavorite(recipeId);
         this.loading.set(false);
       },
       error: () => {
         this.loading.set(false);
-        this.router.navigate(['/recipes']);
       },
     });
   }
 
-  increaseServings(): void {
-    const current = this.scaledServings();
-    this.scaledServings.set(current + 1);
-  }
-
-  decreaseServings(): void {
-    const current = this.scaledServings();
-    if (current > 1) {
-      this.scaledServings.set(current - 1);
+  private checkIfFavorite(recipeId: string): void {
+    if (this.isUserLoggedIn) {
+      this.recipeService.isFavorite(recipeId).subscribe({
+        next: (isFav) => this.isFavorite.set(isFav),
+        error: () => this.isFavorite.set(false),
+      });
     }
   }
 
-  scaleIngredient(ingredient: Ingredient): string {
-    const recipe = this.recipe();
-    if (!recipe) return ingredient.quantity.toString();
-
-    const scaleFactor = this.scaledServings() / recipe.servings!;
-    const scaled = ingredient.quantity.value * scaleFactor;
-    return scaled % 1 === 0 ? scaled.toString() : scaled.toFixed(2);
+  // Event handlers
+  onServingsChanged(newServings: number): void {
+    this.scaledServings.set(newServings);
   }
 
-  rateRecipe(rating: number): void {}
+  onToggleFavorite(): void {
+    const recipeId = this.route.snapshot.paramMap.get('id');
+    if (!recipeId) return;
 
-  getDifficultyClass(difficulty: string): string {
-    const classes = {
-      Easy: 'difficulty-easy',
-      Medium: 'difficulty-medium',
-      Hard: 'difficulty-hard',
-    };
-    return classes[difficulty as keyof typeof classes] || 'difficulty-easy';
+    if (this.isFavorite()) {
+      this.recipeService.toggleFavorite(recipeId).subscribe({
+        next: () => this.isFavorite.set(false),
+      });
+    } else {
+      this.recipeService.toggleFavorite(recipeId).subscribe({
+        next: () => this.isFavorite.set(true),
+      });
+    }
+  }
+
+  onOpenReview(): void {
+    // Implementar modal de review
+    console.log('Abrir modal de review');
+  }
+
+  onEditRecipe(): void {
+    const recipeId = this.route.snapshot.paramMap.get('id');
+    if (recipeId) {
+      this.router.navigate(['/recipes', recipeId, 'edit']);
+    }
+  }
+
+  onDeleteRecipe(): void {
+    const recipeId = this.route.snapshot.paramMap.get('id');
+    if (!recipeId) return;
+
+    if (confirm('Are you sure you want to delete this recipe?')) {
+      this.recipeService.deleteRecipe(recipeId).subscribe({
+        next: () => {
+          this.router.navigate(['/my-recipes']);
+        },
+      });
+    }
   }
 }

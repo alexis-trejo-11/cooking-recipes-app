@@ -1,4 +1,4 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal, PLATFORM_ID } from '@angular/core';
 import { catchError, Observable, of, Subject, switchMap, take, tap, throwError } from 'rxjs';
 import { User, UserProfile } from '../models/user_models';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -9,6 +9,8 @@ import {
   LoginRequest,
   SignupRequest,
 } from '../models/auth_models';
+import { isPlatformBrowser } from '@angular/common';
+import { response } from 'express';
 
 @Injectable({
   providedIn: 'root',
@@ -16,6 +18,7 @@ import {
 export class AuthService {
   private http = inject(HttpClient);
   private apiURL = environment.apiUrl + '/auth';
+  private platformId = inject(PLATFORM_ID);
 
   isAuthenticated = signal(false);
   currentUser = signal<User | undefined>(undefined);
@@ -26,40 +29,48 @@ export class AuthService {
   private refreshInProgress = false;
   private refreshSubject = new Subject<string>();
 
+  private isBrowser: boolean;
+  private initialized = false;
+
   constructor() {
-    console.log('AuthService - Verificando estado de autenticación inicial');
-    setTimeout(() => {
-      this.checkInitialAuthState();
+    this.isBrowser = isPlatformBrowser(this.platformId);
+    console.log('AuthService - Platform:', this.isBrowser ? 'Browser' : 'Server');
+  }
+
+  initialize(): Promise<boolean> {
+    if (this.initialized) {
+      return Promise.resolve(this.isAuthenticated());
+    }
+
+    return new Promise((resolve) => {
+      if (this.isBrowser) {
+        this.checkInitialAuthState().then((authenticated) => {
+          this.initialized = true;
+          resolve(authenticated);
+        });
+      } else {
+        this.initialized = true;
+        resolve(false);
+      }
     });
   }
 
   login(loginRequest: LoginRequest): Observable<AuthSessionResponse> {
     console.log('Iniciando login para:', loginRequest.email);
     return this.http.post<any>(`${this.apiURL}/login`, loginRequest).pipe(
-      tap((response: any) => {
+      tap((response: AuthSessionResponse) => {
         console.log('Login exitoso, respuesta completa:', response);
-
-        const mappedResponse: AuthSessionResponse = {
-          accessToken: response.access_token,
-          refreshToken: response.refresh_token,
-          tokenType: response.token_type,
-          userId: response.user_id,
-        };
 
         console.log(
           ' AccessToken mapeado:',
-          mappedResponse.accessToken
-            ? mappedResponse.accessToken.substring(0, 4) + '...'
-            : 'NO TOKEN'
+          response.accessToken ? response.accessToken.substring(0, 4) + '...' : 'NO TOKEN'
         );
         console.log(
           ' RefreshToken mapeado:',
-          mappedResponse.refreshToken
-            ? mappedResponse.refreshToken.substring(0, 4) + '...'
-            : 'NO TOKEN'
+          response.refreshToken ? response.refreshToken.substring(0, 4) + '...' : 'NO TOKEN'
         );
 
-        this.handleAuthSuccess(mappedResponse);
+        this.handleAuthSuccess(response);
       }),
       catchError((error: HttpErrorResponse) => {
         console.error('Error en login:', error);
@@ -82,20 +93,30 @@ export class AuthService {
     );
   }
 
-  private checkInitialAuthState(): void {
+  private async checkInitialAuthState(): Promise<boolean> {
     const token = this.getAccessToken();
     console.log('Token encontrado en localStorage:', !!token);
 
-    if (token) {
-      console.log('Token existe, verificando usuario actual');
+    if (token && token !== 'undefined' && token !== 'null') {
+      console.log('Token válido encontrado, verificando usuario actual');
       this.isAuthenticated.set(true);
-      this.getCurrentUser().subscribe({
-        next: (user) => console.log('Usuario cargado al iniciar:', user),
-        error: (error) => console.error('Error cargando usuario inicial:', error),
-      });
+
+      try {
+        const user = await this.getCurrentUser().toPromise();
+        console.log('Usuario cargado al iniciar:', user);
+        this.isAuthenticated.set(true);
+        return true;
+      } catch (error) {
+        console.error('Error cargando usuario inicial:', error);
+        this.clearAuthData();
+        this.isAuthenticated.set(false);
+        return false;
+      }
     } else {
-      console.log('No hay token, usuario no autenticado');
+      console.log('No hay token válido, usuario no autenticado');
+      this.clearAuthData();
       this.isAuthenticated.set(false);
+      return false;
     }
   }
 
@@ -143,40 +164,40 @@ export class AuthService {
     console.log('Solicitando usuario actual...');
 
     const token = this.getAccessToken();
-    if (!token) {
-      console.error('No hay token disponible para obtener el usuario');
+
+    if (!token || token === 'undefined' || token === 'null') {
+      console.error('No hay token válido disponible para obtener el usuario');
       this.currentUser.set(undefined);
       this.isAuthenticated.set(false);
-      return throwError(() => new Error('No authentication token available'));
+      return throwError(() => new Error('No valid authentication token available'));
     }
 
-    console.log('Token disponible:', token.substring(0, 20) + '...');
-
+    console.log('Token disponible:', token.substring(0, 4) + '...');
     const headers = {
       Authorization: `Bearer ${token}`,
     };
 
     console.log('Headers de la petición:', headers);
+
     return this.http.get<User>(`${this.apiURL}/me`, { headers }).pipe(
       tap((user: User) => {
         console.log('Usuario actual obtenido:', user);
         this.currentUser.set(user);
+        this.isAuthenticated.set(true);
       }),
       catchError((error: HttpErrorResponse) => {
         console.error('Error obteniendo usuario actual:', error);
         console.error('Status:', error.status);
         console.error('URL:', error.url);
 
-        // Log detallado del error
         if (error.status === 401) {
           console.log('ERROR 401 - Token inválido o expirado');
-          console.log('Token usado:', token.substring(0, 20) + '...');
           this.clearAuthData();
         }
 
         this.currentUser.set(undefined);
         this.isAuthenticated.set(false);
-        return this.handleError(error);
+        return throwError(() => error);
       })
     );
   }
@@ -236,57 +257,54 @@ export class AuthService {
   }
 
   refreshToken(): Observable<AuthSessionResponse> {
-    // Prevenir múltiples llamadas simultáneas de refresh
-    if (this.refreshInProgress) {
-      return this.refreshSubject.asObservable().pipe(
-        take(1),
-        switchMap((token) =>
-          of({
-            accessToken: token,
-            refreshToken: this.getRefreshToken() || '',
-            tokenType: 'bearer',
-          })
-        )
-      );
-    }
+    console.log('🔄 Iniciando refresh token...');
 
-    this.refreshInProgress = true;
     const refreshToken = this.getRefreshToken();
 
     if (!refreshToken) {
-      console.error('No hay refresh token disponible');
+      console.error('❌ No hay refresh token disponible');
       this.clearAuthData();
       return throwError(() => new Error('No refresh token available'));
     }
 
-    console.log('Refrescando token...');
+    console.log('Refresh token encontrado:', refreshToken.substring(0, 20) + '...');
 
-    return this.http.post<any>(`${this.apiURL}/refresh`, { refreshToken }).pipe(
-      tap((response: any) => {
-        console.log('Token refrescado exitosamente');
-
-        const mappedResponse: AuthSessionResponse = {
-          accessToken: response.access_token,
-          refreshToken: response.refresh_token,
-          tokenType: response.token_type,
-        };
-
-        this.setTokens(mappedResponse.accessToken, mappedResponse.refreshToken);
-        this.refreshInProgress = false;
-        this.refreshSubject.next(mappedResponse.accessToken);
-      }),
-      catchError((error: HttpErrorResponse) => {
-        console.error('Error refrescando token:', error);
-        this.refreshInProgress = false;
-
-        if (error.status === 401) {
-          console.log('Refresh token expirado, cerrando sesión...');
-          this.clearAuthData();
-        }
-
-        return this.handleError(error);
+    // El endpoint y body dependen de tu backend
+    return this.http
+      .post<any>(`${this.apiURL}/refresh`, {
+        refresh_token: refreshToken, // Asegúrate que el nombre del campo sea correcto
       })
-    );
+      .pipe(
+        tap((response: any) => {
+          console.log('✅ Refresh token exitoso:', response);
+
+          // Mapear la respuesta según lo que devuelve tu backend
+          const mappedResponse: AuthSessionResponse = {
+            accessToken: response.access_token || response.accessToken,
+            refreshToken: response.refresh_token || response.refreshToken,
+            tokenType: response.token_type || 'bearer',
+          };
+
+          console.log('Nuevo access token:', mappedResponse.accessToken?.substring(0, 20) + '...');
+          console.log(
+            'Nuevo refresh token:',
+            mappedResponse.refreshToken?.substring(0, 20) + '...'
+          );
+
+          // Guardar los nuevos tokens
+          this.setTokens(mappedResponse.accessToken, mappedResponse.refreshToken);
+        }),
+        catchError((error: HttpErrorResponse) => {
+          console.error('❌ Error en refresh token:', error);
+
+          if (error.status === 401 || error.status === 400) {
+            console.log('🔄 Refresh token expirado o inválido, cerrando sesión...');
+            this.clearAuthData();
+          }
+
+          return throwError(() => error);
+        })
+      );
   }
 
   getValidAccessToken(): Observable<string> {
@@ -322,31 +340,74 @@ export class AuthService {
 
   private setTokens(accessToken: string, refreshToken: string) {
     console.log('Guardando tokens en localStorage');
-    localStorage.setItem(this.tokenKey, accessToken);
-    localStorage.setItem(this.refreshTokenKey, refreshToken);
+
+    if (!this.isBrowser) {
+      return;
+    }
+
+    if (!accessToken || !refreshToken) {
+      console.error('Intentando guardar tokens inválidos');
+      return;
+    }
+
+    try {
+      localStorage.setItem(this.tokenKey, accessToken);
+      localStorage.setItem(this.refreshTokenKey, refreshToken);
+    } catch (error) {
+      console.error('Error saving tokens to localStorage:', error);
+    }
   }
 
   public clearAuthData(): void {
-    console.log('Limpiando datos de autenticación');
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.refreshTokenKey);
+    if (this.isBrowser) {
+      localStorage.removeItem(this.tokenKey);
+      localStorage.removeItem(this.refreshTokenKey);
+    }
     this.isAuthenticated.set(false);
     this.currentUser.set(undefined);
     this.userProfile.set(null);
   }
 
   public getAccessToken(): string | null {
-    if (typeof window === 'undefined' || !window.localStorage) {
+    if (!this.isBrowser) {
       return null;
     }
-    return localStorage.getItem(this.tokenKey);
+
+    try {
+      const token = localStorage.getItem(this.tokenKey);
+
+      if (token === 'undefined' || token === 'null') {
+        console.warn('Token inválido encontrado en localStorage:', token);
+        this.clearAuthData();
+        return null;
+      }
+
+      return token;
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
+      return null;
+    }
   }
 
   private getRefreshToken(): string | null {
-    if (typeof window === 'undefined' || !window.localStorage) {
+    if (!this.isBrowser) {
       return null;
     }
-    return localStorage.getItem(this.refreshTokenKey);
+
+    try {
+      const token = localStorage.getItem(this.refreshTokenKey);
+
+      if (token === 'undefined' || token === 'null') {
+        console.warn('Refresh token inválido encontrado en localStorage:', token);
+        localStorage.removeItem(this.refreshTokenKey);
+        return null;
+      }
+
+      return token;
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
+      return null;
+    }
   }
 
   addAuthHeader(headers: { [key: string]: string } = {}): { [key: string]: string } {

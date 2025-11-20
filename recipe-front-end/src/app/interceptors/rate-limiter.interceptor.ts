@@ -1,7 +1,8 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 export const rateLimitInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
@@ -14,7 +15,7 @@ export const rateLimitInterceptor: HttpInterceptorFn = (req, next) => {
         const retryAfter = error.headers?.get('Retry-After');
         const resetTime = retryAfter ? parseInt(retryAfter) * 1000 : 60000;
 
-        router.navigate(['/rate-limit'], {
+        router.navigate(['/rate-limiter'], {
           state: {
             resetTime,
             errorMessage: error.error?.message || 'Too many requests',

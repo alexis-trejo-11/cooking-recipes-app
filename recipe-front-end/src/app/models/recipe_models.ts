@@ -8,27 +8,27 @@ export enum DietType {
 }
 
 export enum DifficultyLevel {
-  EASY = 'easy',
-  MEDIUM = 'medium',
-  HARD = 'hard',
+  EASY = 'Easy',
+  MEDIUM = 'Medium',
+  HARD = 'Hard',
 }
 
 export enum CuisineType {
-  ITALIAN = 'italian',
-  MEXICAN = 'mexican',
-  CHINESE = 'chinese',
-  JAPANESE = 'japanese',
-  INDIAN = 'indian',
-  FRENCH = 'french',
-  MEDITERRANEAN = 'mediterranean',
-  AMERICAN = 'american',
-  THAI = 'thai',
-  ASIAN = 'asian',
-  GREEK = 'greek',
-  SPANISH = 'spanish',
-  FUSION = 'fusion',
-  OTHER = 'other',
-  UNKNOWN = 'unknown',
+  ITALIAN = 'Italian',
+  MEXICAN = 'Mexican',
+  CHINESE = 'Chinese',
+  JAPANESE = 'Japanese',
+  INDIAN = 'Indian',
+  FRENCH = 'French',
+  MEDITERRANEAN = 'Mediterranean',
+  AMERICAN = 'American',
+  THAI = 'Thai',
+  ASIAN = 'Asian',
+  GREEK = 'Greek',
+  SPANISH = 'Spanish',
+  FUSION = 'Fusion',
+  OTHER = 'Other',
+  UNKNOWN = 'Unknown',
 }
 
 export enum MealType {
@@ -48,32 +48,32 @@ export interface RecipeSummary {
   id: number;
   name: string;
   difficulty: DifficultyLevel;
-  author_id: number;
-  image_url?: string | null;
-  author_name?: string | null;
+  authorId: number;
+  imageUrl?: string | null;
+  authorName?: string | null;
   description?: string | null;
   cuisine: CuisineType;
-  prep_time_minutes?: number | null;
-  cook_time_minutes?: number | null;
-  total_time_minutes?: number | null;
+  prepTimeMinutes?: number | null;
+  cookTimeMinutes?: number | null;
+  totalTimeMinutes?: number | null;
   servings: number;
-  average_rating: number;
-  rating_count: number;
-  view_count: number;
-  favorite_count: number;
+  averageRating: number;
+  ratingCount: number;
+  viewCount: number;
+  favoriteCount: number;
   tags: TagResponse[];
-  meal_types: MealType[];
-  created_at: string; // ISO datetime
-  updated_at: string; // ISO datetime
+  mealTypes: MealType[];
+  createdAt: string; // ISO datetime
+  updatedAt: string; // ISO datetime
 }
 
 export interface PaginationResponse {
-  total_items: number;
-  total_pages: number;
-  current_page: number;
-  page_size: number;
-  next_page?: number | null;
-  previous_page?: number | null;
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+  nextPage?: number | null;
+  previousPage?: number | null;
 }
 
 export interface RecipeSummaryPage {
@@ -87,10 +87,10 @@ export interface Quantity {
 }
 
 export interface IngredientProperties {
-  is_vegan: boolean;
-  is_vegetarian: boolean;
-  is_gluten_free: boolean;
-  is_dairy_free: boolean;
+  isVegan: boolean;
+  isVegetarian: boolean;
+  isGlutenFree: boolean;
+  isDairyFree: boolean;
   allergens: string[]; // Set[str] -> array
 }
 
@@ -99,14 +99,14 @@ export interface Ingredient {
   name: string;
   quantity: Quantity;
   properties: IngredientProperties;
-  is_optional: boolean;
+  isOptional: boolean;
   substitutes: string[];
 }
 
 export interface Step {
   number: number;
   description: string;
-  duration_minutes?: number | null;
+  durationMinutes?: number | null;
   technique?: string | null;
   temperature?: string | null;
 }
@@ -118,38 +118,38 @@ export interface Tag {
 
 export interface NutritionalInfo {
   calories?: number | null;
-  protein_g?: number | null;
-  carbs_g?: number | null;
-  fat_g?: number | null;
+  proteinG?: number | null;
+  carbsG?: number | null;
+  fatG?: number | null;
 }
 
 export interface Recipe {
   id: string;
   name: string;
-  author_id: number;
-  author_name?: string | null;
-  description?: string | null;
+  authorId: string;
+  authorName: string | null;
+  description: string | null;
   difficulty: DifficultyLevel;
-  cuisine?: CuisineType | null;
+  cuisine: CuisineType;
   diet: DietType;
   ingredients: Ingredient[];
   steps: Step[];
   tags: Tag[];
-  meal_types: MealType[];
+  mealTypes: MealType[];
   servings?: number | null;
-  prep_time_minutes?: number | null;
-  cook_time_minutes?: number | null;
-  total_time_minutes?: number | null;
-  nutritional_info?: NutritionalInfo | null;
-  average_rating?: number | null;
-  rating_count: number;
-  view_count: number;
-  favorite_count: number;
+  prepTimeMinutes?: number | null;
+  cookTimeMinutes?: number | null;
+  totalTimeMinutes?: number | null;
+  nutritionalInfo?: NutritionalInfo | null;
+  averageRating?: number | null;
+  ratingCount: number;
+  viewCount: number;
+  favoriteCount: number;
   version: number;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   instructions?: string[] | null;
-  image_url?: string | null;
+  imageUrl?: string | null;
 }
 
 // Small s
@@ -160,25 +160,135 @@ export interface RecipeCreated {
 }
 
 export interface RatingAdded {
-  recipe_id: number;
-  new_average_rating?: number | null;
-  total_ratings: number;
+  recipeId: number;
+  newAverageRating?: number | null;
+  totalRatings: number;
   message?: string; // default "Rating added successfully"
 }
 
 export interface RecipeScaled {
-  original_recipe_id: number;
-  scaled_recipe_id: number;
+  originalRecipeId: number;
+  scaledRecipeId: number;
   factor: number;
   message?: string; // default "Recipe scaled successfully"
 }
 
 // Pagination  used by RecipePage
 export interface Pagination {
-  total_items: number;
-  total_pages: number;
-  current_page: number;
-  page_size: number;
-  next_page?: number | null;
-  previous_page?: number | null;
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+  nextPage?: number | null;
+  previousPage?: number | null;
+}
+
+type DecimalString = string;
+
+export interface QuantityRequest {
+  /** Quantity value */
+  value: DecimalString;
+  /** Quantity unit */
+  unit: string;
+}
+
+export interface IngredientPropertiesRequest {
+  isVegan: boolean;
+  isVegetarian: boolean;
+  isGlutenFree: boolean;
+  isDairyFree: boolean;
+  allergens: string[];
+}
+
+export interface CreateIngredientRequest {
+  /** Ingredient name */
+  name: string;
+  quantity: QuantityRequest;
+  properties: IngredientPropertiesRequest;
+  isOptional: boolean;
+  substitutes: string[];
+}
+
+export interface CreateStepRequest {
+  /** Step description */
+  description: string;
+  /** Duration in minutes */
+  durationMinutes?: number | null;
+  /** Cooking technique */
+  technique?: string | null;
+  /** Cooking temperature */
+  temperature?: string | null;
+}
+
+export interface TagRequest {
+  /** Tag name */
+  name: string;
+  /** Tag description */
+  description?: string | null;
+}
+
+export interface NutritionalInfoRequest {
+  /** Calories per serving */
+  calories?: number | null;
+  /** Protein in grams */
+  proteinG?: DecimalString | null;
+  /** Carbs in grams */
+  carbsG?: DecimalString | null;
+  /** Fat in grams */
+  fatG?: DecimalString | null;
+  /** Fiber in grams */
+  fiberG?: DecimalString | null;
+  /** Sodium in mg */
+  sodiumMg?: DecimalString | null;
+}
+
+export interface CookingTimeRequest {
+  /** Preparation time */
+  prepMinutes: number;
+  /** Cooking time */
+  cookMinutes: number;
+}
+
+export interface CreateRecipeRequest {
+  // Required fields
+  /** Recipe name */
+  name: string;
+  /** Difficulty level */
+  difficulty: DifficultyLevel;
+  /** Cuisine type */
+  cuisine: CuisineType;
+  ingredients: CreateIngredientRequest[];
+  steps: CreateStepRequest[];
+  tags: TagRequest[];
+  mealTypes: MealType[];
+
+  // Optional fields
+  /** Recipe description */
+  description: string | null;
+  /** URL of the recipe image */
+  imageUrl?: string | null;
+  /** Number of servings */
+  servings: number;
+  /** Cooking time information */
+  cookingTime: CookingTimeRequest;
+  /** Nutritional information */
+  nutritionalInfo?: NutritionalInfoRequest | null;
+}
+
+export interface UpdateRecipeRequest {
+  name?: string | null;
+  description?: string | null;
+  difficulty?: DifficultyLevel | null;
+  cuisine?: CuisineType | null;
+  ingredients?: CreateIngredientRequest[] | null;
+  steps?: CreateStepRequest[] | null;
+  tags?: TagRequest[] | null;
+  mealTypes?: MealType[] | null;
+  servings?: number | null;
+  prepTimeMinutes?: number | null;
+  cookTimeMinutes?: number | null;
+  calories?: number | null;
+  proteinG?: DecimalString | null;
+  carbsG?: DecimalString | null;
+  fatG?: DecimalString | null;
 }
