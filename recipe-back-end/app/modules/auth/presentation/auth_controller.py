@@ -269,6 +269,7 @@ async def logout(
         401: {"description": "Invalid or expired access token"},
     },
 )
+@rate_limit("generous")
 async def get_current_user(
     current_user: CurrentUser,
 ) -> UserResponse:

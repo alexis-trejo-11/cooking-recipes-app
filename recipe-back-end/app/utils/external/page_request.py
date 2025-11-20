@@ -8,8 +8,8 @@ class PydanticPaginationResponse(BaseModel):
     total_pages: int
     current_page: int
     page_size: int
-    next_page: Optional[int]
-    previous_page: Optional[int]
+    has_next_page: bool
+    has_prev_page: bool
 
 
 class PydanticPaginationParams(BaseModel):

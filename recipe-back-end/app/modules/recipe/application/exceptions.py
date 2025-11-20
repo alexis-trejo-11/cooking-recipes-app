@@ -2,6 +2,7 @@ from typing import Any, Dict
 from app.utils.core.exceptions.modules import RecipeException
 from app.utils.core.exceptions.base import NotFoundException
 from app.modules.recipe.domain.models.entities.recipe import RecipeId
+from app.modules.auth.application.exceptions import UserNotFoundException
 
 
 class RecipeNotFoundException(NotFoundException):

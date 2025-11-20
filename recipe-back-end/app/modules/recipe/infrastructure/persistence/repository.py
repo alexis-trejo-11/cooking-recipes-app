@@ -185,16 +185,6 @@ class SqlAlchemyRecipeRepository(RecipeRepository):
     async def search(
         self, spec: Specification, page_request: PaginationParams
     ) -> Page[Recipe]:
-        """
-        Search recipes using specification pattern.
-
-        Args:
-            spec: Search specification
-            page_request: Pagination parameters
-
-        Returns:
-            Paginated recipe results
-        """
         try:
             query = select(RecipeModel)
             joins = spec.get_joins()
@@ -227,7 +217,6 @@ class SqlAlchemyRecipeRepository(RecipeRepository):
             return Page.empty()
 
     async def exists_by_name_and_author(self, name: str, author_id: UserId) -> bool:
-        """Check if recipe with same name exists for author."""
         stmt = select(
             select(RecipeModel.id)
             .where(
@@ -255,30 +244,12 @@ class SqlAlchemyRecipeRepository(RecipeRepository):
         return result.scalar() or False
 
     async def save(self, recipe: Recipe) -> Recipe:
-        """
-        Save recipe (create or update).
-
-        Args:
-            recipe: Recipe entity to save
-
-        Returns:
-            Saved recipe entity
-        """
         if recipe.id and recipe.id.value > 0:
             return await self._update(recipe)
         else:
             return await self._create(recipe)
 
     async def delete(self, recipe_id: RecipeId) -> bool:
-        """
-        Soft delete recipe.
-
-        Args:
-            recipe_id: Recipe identifier
-
-        Returns:
-            True if deleted, False if not found
-        """
         stmt = (
             update(RecipeModel)
             .where(
@@ -312,7 +283,6 @@ class SqlAlchemyRecipeRepository(RecipeRepository):
         await self.session.commit()
 
     async def _create(self, recipe: Recipe) -> Recipe:
-        """Create new recipe with all relationships."""
         try:
             recipe_data = self.mapper.entity_to_dict(recipe)
             recipe_model = RecipeModel(**recipe_data)
@@ -340,7 +310,6 @@ class SqlAlchemyRecipeRepository(RecipeRepository):
             raise
 
     async def _update(self, recipe: Recipe) -> Recipe:
-        """Update existing recipe with all relationships."""
         try:
             if not recipe.id:
                 raise RecipeNotFoundException(recipe.id)

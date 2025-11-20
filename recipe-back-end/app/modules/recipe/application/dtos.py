@@ -695,7 +695,7 @@ class RecipePageResponse(BaseModel):
                 total_pages=recipe_page.total_pages,
                 current_page=recipe_page.page,
                 page_size=recipe_page.size,
-                next_page=recipe_page.next_page,
-                previous_page=recipe_page.prev_page,
+                has_next_page=recipe_page.has_next_page,
+                has_prev_page=recipe_page.has_prev_page,
             ),
         )

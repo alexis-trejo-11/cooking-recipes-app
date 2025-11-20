@@ -8,11 +8,14 @@ from app.utils.core.exceptions.base import (
 
 # Configuración global de rate limits
 RATE_LIMIT_CONFIG = {
-    "default": {"max_requests": 100, "window_seconds": 3600},
-    "strict": {"max_requests": 10, "window_seconds": 300},
-    "generous": {"max_requests": 1000, "window_seconds": 3600},
-    "public": {"max_requests": 500, "window_seconds": 3600},
-    "sensitive": {"max_requests": 5, "window_seconds": 60},
+    "default": {"max_requests": 100, "window_seconds": 3600},  # 100 requests per hour
+    "strict": {"max_requests": 10, "window_seconds": 300},  # 10 requests per 5 minutes
+    "generous": {
+        "max_requests": 1000,
+        "window_seconds": 3600,
+    },  # 1000 requests per hour
+    "public": {"max_requests": 500, "window_seconds": 3600},  # 500 requests per hour
+    "sensitive": {"max_requests": 5, "window_seconds": 60},  # 5 requests per minute
 }
 
 

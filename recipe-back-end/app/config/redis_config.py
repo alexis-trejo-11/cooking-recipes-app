@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class RedisSettings(BaseSettings):
     """Redis configuration settings"""
 
-    REDIS_HOST: str = "redis"
+    REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
     REDIS_PASSWORD: Optional[str] = None

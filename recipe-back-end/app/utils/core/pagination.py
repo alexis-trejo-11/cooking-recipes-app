@@ -145,14 +145,14 @@ class Page(Generic[TI]):
         return self.page > 1
 
     @property
-    def next_page(self) -> Optional[int]:
-        """Get the next page number, or None if no next page."""
-        return self.page + 1 if self.has_next else None
+    def has_next_page(self) -> bool:
+        """Check if there is a next page."""
+        return self.page < self.total_pages
 
     @property
-    def prev_page(self) -> Optional[int]:
-        """Get the previous page number, or None if no previous page."""
-        return self.page - 1 if self.has_prev else None
+    def has_prev_page(self) -> bool:
+        """Check if there is a previous page."""
+        return self.page > 1
 
     @property
     def start_index(self) -> int:
@@ -198,8 +198,8 @@ class Page(Generic[TI]):
             "total_pages": self.total_pages,
             "has_next": self.has_next,
             "has_prev": self.has_prev,
-            "next_page": self.next_page,
-            "prev_page": self.prev_page,
+            "has_next_page": self.has_next_page,
+            "has_prev_page": self.has_prev_page,
             "start_index": self.start_index,
             "end_index": self.end_index,
         }
