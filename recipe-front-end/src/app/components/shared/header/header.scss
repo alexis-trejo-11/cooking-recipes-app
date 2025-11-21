@@ -99,15 +99,47 @@
       .nav-right {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 1rem;
+
+        /* Estilos para el componente app-theme-toggle */
+        app-theme-toggle {
+          display: flex;
+          align-items: center;
+        }
 
         .user-section {
           display: none;
           align-items: center;
-          gap: 0.75rem;
+          gap: 1rem;
 
           @media (min-width: 768px) {
             display: flex;
+          }
+
+          .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            .nav-link {
+              padding: 0.5rem 1rem;
+              border-radius: 0.5rem;
+              color: var(--text-secondary);
+              font-weight: 500;
+              text-decoration: none;
+              transition: all 0.2s ease-in-out;
+              white-space: nowrap;
+
+              &:hover {
+                color: var(--primary-color);
+                background-color: var(--bg-accent);
+              }
+
+              &.active-link {
+                color: var(--primary-color);
+                background-color: var(--bg-accent);
+              }
+            }
           }
 
           .user-profile {
@@ -118,9 +150,11 @@
             border-radius: 0.5rem;
             text-decoration: none;
             transition: background-color 0.2s ease-in-out;
+            border: 1px solid transparent;
 
             &:hover {
               background-color: var(--bg-accent);
+              border-color: var(--border-color);
             }
 
             .user-avatar {
@@ -140,18 +174,28 @@
             .user-name {
               font-size: 0.875rem;
               font-weight: 500;
-              color: var(--text-secondary);
+              color: var(--text-primary);
+              max-width: 120px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
             }
           }
 
           .logout-btn {
             padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
             color: var(--text-secondary);
             font-weight: 500;
-            transition: color 0.2s ease-in-out;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
 
             &:hover {
               color: #dc2626;
+              border-color: #dc2626;
+              background-color: rgba(220, 38, 38, 0.05);
             }
           }
         }
@@ -159,7 +203,7 @@
         .auth-section {
           display: none;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.75rem;
 
           @media (min-width: 768px) {
             display: flex;
@@ -170,10 +214,12 @@
             color: var(--text-secondary);
             font-weight: 500;
             text-decoration: none;
-            transition: color 0.2s ease-in-out;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
 
             &:hover {
               color: var(--primary-color);
+              background-color: var(--bg-accent);
             }
           }
 
@@ -181,15 +227,18 @@
             padding: 0.5rem 1.25rem;
             background: linear-gradient(to right, #f97316, #ef4444);
             color: #ffffff;
+            border: none;
             border-radius: 0.5rem;
             font-weight: 600;
             text-decoration: none;
+            cursor: pointer;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             transition: all 0.2s ease-in-out;
 
             &:hover {
               background: linear-gradient(to right, #ea580c, #dc2626);
               box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+              transform: translateY(-1px);
             }
           }
         }
@@ -197,11 +246,15 @@
         .mobile-menu-btn {
           padding: 0.5rem;
           color: var(--text-secondary);
+          background: transparent;
+          border: 1px solid var(--border-color);
           border-radius: 0.5rem;
-          transition: background-color 0.2s ease-in-out;
+          cursor: pointer;
+          transition: all 0.2s ease-in-out;
 
           &:hover {
             background-color: var(--bg-accent);
+            color: var(--primary-color);
           }
 
           @media (min-width: 768px) {
