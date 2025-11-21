@@ -18,7 +18,7 @@ from app.modules.auth.domain.user import UserId
 from app.modules.recipe.domain.models.entities.recipe import Recipe, RecipeId
 from app.modules.recipe.infrastructure.persistence.models import (
     RecipeModel,
-    recipe_reviews,
+    ReviewModel,
     recipe_favorites,
 )
 from app.modules.recipe.application.exceptions import RecipeNotFoundException
@@ -473,13 +473,13 @@ class SqlAlchemyRecipeRepository(RecipeRepository, BaseRepository, QueryBuilderM
         """Get rating statistics for a recipe."""
         rating_count_stmt = (
             select(func.count())
-            .select_from(recipe_reviews)
-            .where(recipe_reviews.c.recipe_id == recipe_id)
+            .select_from(ReviewModel)
+            .where(ReviewModel.recipe_id == recipe_id)
         )
         rating_sum_stmt = (
-            select(func.coalesce(func.sum(recipe_reviews.c.rating), 0))
-            .select_from(recipe_reviews)
-            .where(recipe_reviews.c.recipe_id == recipe_id)
+            select(func.coalesce(func.sum(ReviewModel.rating), 0))
+            .select_from(ReviewModel)
+            .where(ReviewModel.recipe_id == recipe_id)
         )
 
         rating_count_result = await self.session.execute(rating_count_stmt)

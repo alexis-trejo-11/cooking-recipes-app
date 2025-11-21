@@ -116,7 +116,7 @@ Obtain a new access token using refresh token.
 - `401 Unauthorized` - Invalid or expired refresh token
 - `404 Not Found` - Session not found in Redis
 
-**Rate Limit:** `moderate` (30 requests/60s)
+**Rate Limit:** `api` (30 requests/60s)
 
 ---
 

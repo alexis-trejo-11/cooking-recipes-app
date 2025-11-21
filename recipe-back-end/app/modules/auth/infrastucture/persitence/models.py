@@ -4,7 +4,10 @@ from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.config.sql_session import Base
-from app.modules.recipe.infrastructure.persistence.models import RecipeModel
+from app.modules.recipe.infrastructure.persistence.models import (
+    RecipeModel,
+    ReviewModel,
+)
 
 
 class UserModel(Base):
@@ -17,7 +20,9 @@ class UserModel(Base):
     last_name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password: Mapped[str] = mapped_column(String(255))
-    phone_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    phone_number: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True, unique=True
+    )
     date_of_birth: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     gender: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     bio: Mapped[str] = mapped_column(Text, default="")
@@ -33,6 +38,12 @@ class UserModel(Base):
 
     # Relationships
     recipes: Mapped[List["RecipeModel"]] = relationship(back_populates="author")
+
+    reviews: Mapped[List["ReviewModel"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email})>"

@@ -14,7 +14,7 @@ from app.modules.auth.application.exceptions import UserNotFoundException
 import json
 from app.modules.recipe.infrastructure.persistence.models import (
     recipe_favorites,
-    recipe_reviews,
+    ReviewModel,
     RecipeModel,
 )
 
@@ -132,6 +132,12 @@ class SQLAlchemyUserRepository(UserRepository):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none() is not None
 
+    async def exists_by_phone(self, phone: str) -> bool:
+        """Check if user exists by phone number"""
+        stmt = select(UserModel.id).where(UserModel.phone_number == phone)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none() is not None
+
     async def get_recipe_stats(self, id: UserId) -> UserRecipeStats:
         """Get user recipe statistics"""
         # Count favorite recipes
@@ -142,9 +148,7 @@ class SQLAlchemyUserRepository(UserRepository):
         favorite_count = len(fav_result.fetchall())
 
         # Count reviewed recipes
-        rev_stmt = select(recipe_reviews.c.user_id).where(
-            recipe_reviews.c.user_id == id.value
-        )
+        rev_stmt = select(ReviewModel.user_id).where(ReviewModel.user_id == id.value)
         rev_result = await self.session.execute(rev_stmt)
         reviewed_count = len(rev_result.fetchall())
 

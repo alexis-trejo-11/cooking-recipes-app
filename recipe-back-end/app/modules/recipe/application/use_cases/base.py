@@ -11,12 +11,17 @@ from app.modules.recipe.application.dtos import (
     RecipeCreatedResponse,
     CreateRecipeRequest,
     RecipeSummaryResponse,
+    ReviewPageResponse,
+    ReviewResponse,
     UpdateRecipeRequest,
     RecipePageResponse,
     RecipeResponse,
     ReviewCreatedResponse,
     CreateReviewRequest,
+    UpdateReviewRequest,
 )
+
+# Recipe Use Cases
 
 
 class SearchRecipesUseCase(ABC):
@@ -81,9 +86,36 @@ class DeleteRecipeUseCase(ABC):
         pass
 
 
+# Review Use Cases
+
+
+class GetUserReviewForRecipeUseCase(ABC):
+    @abstractmethod
+    async def execute(self, recipe_id: RecipeId, user_id: UserId) -> ReviewResponse:
+        pass
+
+
+class GetRecipeReviewsUseCase(ABC):
+    @abstractmethod
+    async def execute(
+        self, recipe_id: RecipeId, page_request: PaginationParams
+    ) -> ReviewPageResponse:
+        pass
+
+
 class CreateReviewUseCase(ABC):
     @abstractmethod
-    async def execute(self, request: CreateReviewRequest) -> ReviewCreatedResponse:
+    async def execute(
+        self, request: CreateReviewRequest, user_id: UserId, recipe_id: RecipeId
+    ) -> ReviewCreatedResponse:
+        pass
+
+
+class UpdateReviewUseCase(ABC):
+    @abstractmethod
+    async def execute(
+        self, user_id: UserId, recipe_id: RecipeId, update_data: UpdateReviewRequest
+    ) -> None:
         pass
 
 
@@ -97,6 +129,9 @@ class IncrementViewCountUseCase(ABC):
     @abstractmethod
     async def execute(self, recipe_id: RecipeId) -> None:
         pass
+
+
+# Favorite Use Cases
 
 
 class ToggleFavoriteUseCase(ABC):

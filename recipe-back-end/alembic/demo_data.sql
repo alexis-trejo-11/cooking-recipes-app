@@ -43,14 +43,14 @@ INSERT INTO recipes (id, name, author_id, difficulty, cuisine, description, serv
 
 
 INSERT INTO recipe_meal_types (recipe_id, meal_type) VALUES
-(1, 'dinner'), (1, 'lunch'),
-(2, 'lunch'), (2, 'dinner'),
-(3, 'dessert'), (3, 'snack'),
-(4, 'dinner'), (4, 'lunch'),
-(5, 'lunch'), (5, 'dinner'),
-(6, 'dinner'), (6, 'lunch'),
-(7, 'lunch'), (7, 'dinner'),
-(8, 'breakfast');
+(1, 'Dinner'), (1, 'Lunch'),
+(2, 'Lunch'), (2, 'Dinner'),
+(3, 'Dessert'), (3, 'Snack'),
+(4, 'Dinner'), (4, 'Lunch'),
+(5, 'Lunch'), (5, 'Dinner'),
+(6, 'Dinner'), (6, 'Lunch'),
+(7, 'Lunch'), (7, 'Dinner'),
+(8, 'Breakfast');
 
 
 INSERT INTO recipe_tags (recipe_id, tag_id) VALUES
@@ -123,7 +123,7 @@ INSERT INTO recipe_steps (id, recipe_id, step_number, description, duration_minu
 (14, 3, 5, 'Fold in chocolate chips and drop dough onto baking sheets', 3, 'Scooping', 'Room', '["chocolate chips"]'),
 (15, 3, 6, 'Bake for 10-12 minutes until edges are golden brown', 12, 'Baking', 'Medium', '[]');
 
-INSERT INTO recipe_reviews (recipe_id, user_id, reviewed_at, rating, comment) VALUES
+INSERT INTO recipe_reviews (recipe_id, user_id, created_at, rating, comment) VALUES
 (1, 2, CURRENT_TIMESTAMP, 5, 'Absolutely delicious! Perfect creamy texture.'),
 (1, 3, CURRENT_TIMESTAMP, 4, 'Great recipe, but I used bacon instead of pancetta.'),
 (2, 1, CURRENT_TIMESTAMP, 5, 'So healthy and filling! Love the colors.'),

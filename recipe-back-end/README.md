@@ -479,8 +479,11 @@ See [API_ENDPOINTS.md](docs/API_ENDPOINTS.md) for detailed endpoint documentatio
 | GET    | `/api/v1/recipes/my/favorites`          | Get user favorites     | Yes           |
 | GET    | `/api/v1/recipes/is_favorite/{id}`      | Check favorite status  | Yes           |
 | PATCH  | `/api/v1/recipes/{id}/favorites/toggle` | Toggle favorite        | Yes           |
-| POST   | `/api/v1/recipes/{id}/ratings`          | Add review             | Yes           |
-| DELETE | `/api/v1/recipes/{id}/ratings`          | Delete review          | Yes           |
+| GET    | `/api/v1/recipes/{id}/reviews`          | Get reviews            | No            |
+| GET    | `/api/v1/recipes/{id}/reviews/my`       | Get user's review      | Yes           |
+| POST   | `/api/v1/recipes/{id}/reviews`          | Add review             | Yes           |
+| PUT    | `/api/v1/recipes/{id}/reviews`          | Update review          | Yes           |
+| DELETE | `/api/v1/recipes/{id}/reviews`          | Delete review          | Yes           |
 
 ### Request/Response Examples
 
@@ -637,7 +640,7 @@ Many-to-many relationship tracking user favorite recipes.
 
 #### Recipe Reviews Table
 
-User ratings and comments for recipes.
+User reviews and comments for recipes.
 
 ## 🔐 Authentication & Security
 
@@ -710,7 +713,7 @@ The API uses **JSON Web Tokens (JWT)** for stateless authentication with a two-t
 - **Storage**: Never stored in plain text
 - **Transmission**: Always over HTTPS in production
 
-### Rate Limiting
+### Rate Limiting #TODO: Update based on final implementation
 
 Redis-based rate limiting with multiple tiers:
 
@@ -718,7 +721,7 @@ Redis-based rate limiting with multiple tiers:
 | ------------- | -------- | ------ | --------------------------------- |
 | **public**    | 100      | 60s    | Public endpoints (search, browse) |
 | **generous**  | 60       | 60s    | Authenticated users               |
-| **moderate**  | 30       | 60s    | Token refresh operations          |
+| **api**       | 30       | 60s    | Token refresh operations          |
 | **strict**    | 10       | 60s    | Login/signup endpoints            |
 | **sensitive** | 20       | 60s    | Create/update operations          |
 

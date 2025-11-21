@@ -2,14 +2,14 @@ from enum import Enum
 
 
 class DietType(Enum):
-    VEGAN = "vegan"
-    VEGETARIAN = "vegetarian"
-    GLUTEN_FREE = "gluten_free"
-    DAIRY_FREE = "dairy_free"
-    KETO = "keto"
-    PALEO = "paleo"
-    REGULAR = "regular"
-    UNKNOWN = "unknown"
+    VEGAN = "Vegan"
+    VEGETARIAN = "Vegetarian"
+    GLUTEN_FREE = "Gluten Free"
+    DAIRY_FREE = "Dairy Free"
+    KETO = "Keto"
+    PALEO = "Paleo"
+    REGULAR = "Regular"
+    UNKNOWN = "Unknown"
 
     def is_valid(self) -> bool:
         return self != DietType.UNKNOWN and self != None and self != ""
@@ -19,10 +19,10 @@ class DietType(Enum):
 
 
 class DifficultyLevel(Enum):
-    EASY = "easy"
-    MEDIUM = "medium"
-    HARD = "hard"
-    UNKNOWN = "unknown"
+    EASY = "Easy"
+    MEDIUM = "Medium"
+    HARD = "Hard"
+    UNKNOWN = "Unknown"
 
     def is_valid(self) -> bool:
         return self != DifficultyLevel.UNKNOWN and self != None and self != ""
@@ -32,12 +32,12 @@ class DifficultyLevel(Enum):
 
 
 class MealType(Enum):
-    BREAKFAST = "breakfast"
-    LUNCH = "lunch"
-    DINNER = "dinner"
-    SNACK = "snack"
-    DESSERT = "dessert"
-    APPETIZER = "appetizer"
+    BREAKFAST = "Breakfast"
+    LUNCH = "Lunch"
+    DINNER = "Dinner"
+    SNACK = "Snack"
+    DESSERT = "Dessert"
+    APPETIZER = "Appetizer"
 
     def is_valid(self) -> bool:
         return self != DietType.UNKNOWN and self != None and self != ""
@@ -47,21 +47,21 @@ class MealType(Enum):
 
 
 class CuisineType(Enum):
-    ITALIAN = "italian"
-    MEXICAN = "mexican"
-    CHINESE = "chinese"
-    JAPANESE = "japanese"
-    INDIAN = "indian"
-    FRENCH = "french"
-    GREEK = "greek"
-    MEDITERRANEAN = "mediterranean"
-    AMERICAN = "american"
-    THAI = "thai"
-    ASIAN = "asian"
-    SPANISH = "spanish"
-    FUSION = "fusion"
-    OTHER = "other"
-    UNKNOWN = "unknown"
+    ITALIAN = "Italian"
+    MEXICAN = "Mexican"
+    CHINESE = "Chinese"
+    JAPANESE = "Japanese"
+    INDIAN = "Indian"
+    FRENCH = "French"
+    GREEK = "Greek"
+    MEDITERRANEAN = "Mediterranean"
+    AMERICAN = "American"
+    THAI = "Thai"
+    ASIAN = "Asian"
+    SPANISH = "Spanish"
+    FUSION = "Fusion"
+    OTHER = "Other"
+    UNKNOWN = "Unknown"
 
     def is_valid(self) -> bool:
         return self != DietType.UNKNOWN and self != None and self != ""

@@ -25,22 +25,31 @@ from app.modules.recipe.application.exceptions import (
 )
 from app.modules.recipe.presentation.dependencies import (
     # Command Use Cases
+    # Recipe Use Cases
     CreateRecipeUseCaseDep,
+    IncrementViewCountUseCaseDep,
     UpdateRecipeUseCaseDep,
     DeleteRecipeUseCaseDep,
     RestoreRecipeUseCaseDep,
+    # Review Use Cases
     CreateReviewUseCaseDep,
+    UpdateReviewUseCaseDep,
     DeleteReviewUseCaseDep,
+    # Favorite Use Cases
     ToggleFavoriteUseCaseDep,
-    IncrementViewCountUseCaseDep,
     # Query Use Cases
+    # Recipe Use Cases
     GetRecipeUseCaseDep,
     SearchRecipesUseCaseDep,
     GetUserRecipesUseCaseDep,
     GetFeaturedRecipesUseCaseDep,
+    # Favorite Use Cases
     GetUserFavoritesRecipesUseCaseDep,
     GetRecipeFavoritesByUserUseCaseDep,
     IsFavoriteUseCaseDep,
+    # Review Use Cases
+    GetRecipeReviewsUseCaseDep,
+    GetUserReviewForRecipeUseCaseDep,
     # Request Dependencies
     PaginationParamsDep,
     RecipeSearchRequestDep,
@@ -105,7 +114,7 @@ async def search_recipes(
     - Text search in recipe names
     - Filter by author, difficulty, cuisine
     - Filter by meal types, tags, ingredients
-    - Filter by cooking time and ratings
+    - Filter by cooking time and reviews
     - Full pagination support
 
     Args:
@@ -214,14 +223,8 @@ async def is_favorite_recipe(
     Example Response:
         {"is_favorite": true}
     """
-    try:
-        is_favorite = await use_case.execute(RecipeId(recipe_id), logged_user.id)
-        return {"is_favorite": is_favorite}
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to check favorite status",
-        )
+    is_favorite = await use_case.execute(RecipeId(recipe_id), logged_user.id)
+    return {"is_favorite": is_favorite}
 
 
 @router.patch(
@@ -294,21 +297,7 @@ async def create_recipe(
     Raises:
         HTTPException: If validation fails or user not found
     """
-    try:
-        return await use_case.execute(request, logged_user.id)
-    except (RecipeValidationException, UserNotFoundException) as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": str(e),
-                "code": getattr(e, "error_code", "VALIDATION_ERROR"),
-            },
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Recipe creation failed",
-        )
+    return await use_case.execute(request, logged_user.id)
 
 
 @router.get(
@@ -344,21 +333,12 @@ async def get_recipe(
     Raises:
         HTTPException: If recipe is not found
     """
-    try:
-        # Increment view count asynchronously (fire and forget)
-        await increment_views.execute(RecipeId(recipe_id))
+    # Increment view count asynchronously (fire and forget)
+    await increment_views.execute(RecipeId(recipe_id))
 
-        # Retrieve recipe details
-        recipe = await use_case.execute(RecipeId(recipe_id))
-        return recipe
-
-    except RecipeNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to retrieve recipe",
-        )
+    # Retrieve recipe details
+    recipe = await use_case.execute(RecipeId(recipe_id))
+    return recipe
 
 
 @router.put(
@@ -413,24 +393,86 @@ async def update_recipe(
         )
 
 
+@router.get(
+    "/{recipe_id}/reviews",
+    response_model=ReviewPageResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get Recipe Reviews",
+    description="Retrieve paginated reviews for a specific recipe",
+    response_description="Paginated recipe reviews",
+)
+@rate_limit("public")
+async def get_recipe_reviews(
+    use_case: GetRecipeReviewsUseCaseDep,
+    pagination: PaginationParamsDep,
+    recipe_id: int = Path(..., gt=0, description="The ID of the recipe", example=123),
+) -> ReviewPageResponse:
+    """
+    Get paginated reviews for a recipe.
+
+    Retrieves user-submitted reviews for the specified recipe, including ratings
+    and comments. Supports pagination for efficient browsing.
+
+    Args:
+        recipe_id: ID of the recipe
+        pagination: Pagination parameters (page, size, sorting)
+    Returns:
+        ReviewPageResponse: Paginated list of reviews for the recipe
+    return await use_case.execute(RecipeId(recipe_id), pagination)
+    """
+    return await use_case.execute(
+        RecipeId(recipe_id), pagination.to_pagination_params()
+    )
+
+
+@router.get(
+    "/{recipe_id}/reviews/my",
+    response_model=ReviewResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get User's Review for Recipe",
+    description="Retrieve the authenticated user's review for a specific recipe",
+    response_description="User's review for the recipe",
+)
+@rate_limit("generous")
+async def get_user_review_for_recipe(
+    use_case: GetUserReviewForRecipeUseCaseDep,
+    recipe_id: int = Path(..., gt=0, description="The ID of the recipe", example=123),
+    logged_user: User = Depends(get_current_user),
+) -> ReviewResponse:
+    """
+    Get the authenticated user's review for a specific recipe.
+
+    Retrieves the review submitted by the current user for the specified recipe,
+    if it exists. Useful for displaying or editing the user's own review.
+
+    Args:
+        recipe_id: ID of the recipe
+        logged_user: Authenticated user
+    Returns:
+        ReviewResponse: The user's review for the recipe
+    """
+    return await use_case.execute(RecipeId(recipe_id), logged_user.id)
+
+
 @router.post(
-    "/{recipe_id}/ratings",
+    "/{recipe_id}/reviews",
     response_model=ReviewCreatedResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Add Review",
     description="Add a review and rating to a recipe",
-    response_description="Review creation result with updated ratings",
+    response_description="Review creation result with updated reviews",
 )
 @rate_limit("sensitive")
 async def add_review(
     request: CreateReviewRequest,
     use_case: CreateReviewUseCaseDep,
+    recipe_id: int = Path(..., gt=0, description="The ID of the recipe", example=123),
     logged_user: User = Depends(get_current_user),
 ) -> ReviewCreatedResponse:
     """
     Add a review to a recipe.
 
-    Users can submit reviews with ratings (1-5 stars) and optional comments.
+    Users can submit reviews with reviews (1-5 stars) and optional comments.
     Each user can only review a recipe once. Reviews impact the recipe's average rating.
 
     Args:
@@ -443,26 +485,40 @@ async def add_review(
     Raises:
         HTTPException: If validation fails or duplicate review detected
     """
-    try:
-        return await use_case.execute(request)
+    return await use_case.execute(request, logged_user.id, RecipeId(recipe_id))
 
-    except (RecipeNotFoundException, RecipeValidationException) as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": str(e),
-                "code": getattr(e, "error_code", "VALIDATION_ERROR"),
-            },
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to add review",
-        )
+
+@router.patch(
+    "/{recipe_id}/reviews",
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Update Review",
+    description="Update a user's review for a recipe",
+    response_description="Review update result with updated reviews",
+)
+@rate_limit("sensitive")
+async def update_review(
+    request: UpdateReviewRequest,
+    use_case: UpdateReviewUseCaseDep,
+    recipe_id: int = Path(..., gt=0, description="The ID of the recipe", example=123),
+    logged_user: User = Depends(get_current_user),
+) -> None:
+    """
+    Update a user's review for a recipe.
+
+    Allows users to modify their existing reviews. This will update the recipe's
+    average rating and review count accordingly.
+
+    Args:
+        request: Updated review data including new rating and optional comment
+        recipe_id: ID of the recipe
+        logged_user: Authenticated user (must be the review author)
+    """
+    await use_case.execute(logged_user.id, RecipeId(recipe_id), request)
 
 
 @router.delete(
-    "/{recipe_id}/ratings",
+    "/{recipe_id}/reviews",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete Review",
     description="Remove a user's review from a recipe",
@@ -486,16 +542,7 @@ async def delete_review(
     Raises:
         HTTPException: If recipe not found or review doesn't exist
     """
-    try:
-        await use_case.execute(RecipeId(recipe_id), logged_user.id)
-
-    except RecipeNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to delete review",
-        )
+    await use_case.execute(RecipeId(recipe_id), logged_user.id)
 
 
 @router.post(
@@ -525,16 +572,7 @@ async def restore_recipe(
     Raises:
         HTTPException: If recipe not found or user not authorized
     """
-    try:
-        await use_case.execute(RecipeId(recipe_id))
-
-    except RecipeNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to restore recipe",
-        )
+    await use_case.execute(RecipeId(recipe_id))
 
 
 @router.delete(
@@ -565,13 +603,4 @@ async def delete_recipe(
     Raises:
         HTTPException: If recipe not found or user not authorized
     """
-    try:
-        await use_case.execute(RecipeId(recipe_id), logged_user.id)
-
-    except RecipeNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to delete recipe",
-        )
+    await use_case.execute(RecipeId(recipe_id), logged_user.id)

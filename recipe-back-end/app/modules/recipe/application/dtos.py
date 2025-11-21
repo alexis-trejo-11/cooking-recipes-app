@@ -35,45 +35,45 @@ from app.modules.recipe.infrastructure.persistence.specification_builder import 
 
 
 class DifficultyLevel(str, Enum):
-    EASY = "easy"
-    MEDIUM = "medium"
-    HARD = "hard"
+    EASY = "Easy"
+    MEDIUM = "Medium"
+    HARD = "Hard"
 
 
 class CuisineType(str, Enum):
-    ITALIAN = "italian"
-    MEXICAN = "mexican"
-    CHINESE = "chinese"
-    JAPANESE = "japanese"
-    INDIAN = "indian"
-    FRENCH = "french"
-    MEDITERRANEAN = "mediterranean"
-    AMERICAN = "american"
-    THAI = "thai"
-    ASIAN = "asian"
-    GREEK = "greek"
-    SPANISH = "spanish"
-    FUSION = "fusion"
-    OTHER = "other"
-    UNKNOWN = "unknown"
+    ITALIAN = "Italian"
+    MEXICAN = "Mexican"
+    CHINESE = "Chinese"
+    JAPANESE = "Japanese"
+    INDIAN = "Indian"
+    FRENCH = "French"
+    MEDITERRANEAN = "Mediterranean"
+    AMERICAN = "American"
+    THAI = "Thai"
+    ASIAN = "Asian"
+    GREEK = "Greek"
+    SPANISH = "Spanish"
+    FUSION = "Fusion"
+    OTHER = "Other"
+    UNKNOWN = "Unknown"
 
 
 class MealType(str, Enum):
-    BREAKFAST = "breakfast"
-    LUNCH = "lunch"
-    DINNER = "dinner"
-    SNACK = "snack"
-    DESSERT = "dessert"
+    BREAKFAST = "Breakfast"
+    LUNCH = "Lunch"
+    DINNER = "Dinner"
+    SNACK = "Snack"
+    DESSERT = "Dessert"
 
 
 # to
 class DietType(str, Enum):
-    VEGAN = "vegan"
-    VEGETARIAN = "vegetarian"
-    GLUTEN_FREE = "gluten_free"
-    DAIRY_FREE = "dairy_free"
-    KETO = "keto"
-    REGULAR = "regular"
+    VEGAN = "Vegan"
+    VEGETARIAN = "Vegetarian"
+    GLUTEN_FREE = "Gluten_free"
+    DAIRY_FREE = "Dairy_free"
+    KETO = "Keto"
+    REGULAR = "Regular"
 
 
 class QuantityRequest(BaseModel):
@@ -347,16 +347,58 @@ class ScaleRecipeRequest(BaseModel):
 
 class CreateReviewRequest(BaseModel):
     rating: int = Field(..., ge=1, le=5, description="Rating from 1 to 5")
-    recipe_id: int = Field(..., gt=0, description="Recipe ID")
-    user_id: int = Field(..., gt=0, description="User ID")
     comment: str = Field(..., max_length=500, description="Review comment")
 
-    def to_domain(self) -> Review:
-        return Review(
-            recipe_id=RecipeId(self.recipe_id),
-            user_id=UserId(self.user_id),
+    def to_domain(self, recipe_id: RecipeId, user_id: UserId) -> Review:
+        return Review.create(
+            recipe_id=recipe_id,
+            user_id=user_id,
             rating=self.rating,
             comment=self.comment,
+        )
+
+
+class UpdateReviewRequest(BaseModel):
+    rating: int = Field(..., ge=1, le=5, description="Rating from 1 to 5")
+    comment: str = Field(..., max_length=500, description="Review comment")
+
+
+class ReviewResponse(BaseModel):
+    recipe_id: int = Field(..., description="Recipe ID")
+    user_id: int = Field(..., description="User ID")
+    rating: int = Field(..., description="Rating value")
+    comment: str = Field(..., description="Review comment")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+    @classmethod
+    def from_review(cls, review: Review) -> "ReviewResponse":
+        return cls(
+            recipe_id=review.recipe_id.value,
+            user_id=review.user_id.value,
+            rating=review.rating,
+            comment=review.comment,
+            created_at=review.created_at,
+            updated_at=review.updated_at,
+        )
+
+
+class ReviewPageResponse(BaseModel):
+    reviews: List[ReviewResponse]
+    pagination: PydanticPaginationResponse
+
+    @classmethod
+    def from_page(cls, review_page: Page[ReviewResponse]) -> "ReviewPageResponse":
+        return cls(
+            reviews=review_page.items,
+            pagination=PydanticPaginationResponse(
+                total_items=review_page.total,
+                total_pages=review_page.total_pages,
+                current_page=review_page.page,
+                page_size=review_page.size,
+                has_next_page=review_page.has_next_page,
+                has_prev_page=review_page.has_prev_page,
+            ),
         )
 
 

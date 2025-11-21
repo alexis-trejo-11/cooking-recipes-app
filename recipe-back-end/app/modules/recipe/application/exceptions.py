@@ -17,6 +17,19 @@ class RecipeNotFoundException(NotFoundException):
         )
 
 
+class ReviewDontFoundException(NotFoundException):
+    """Review not found errors"""
+
+    def __init__(self, recipe_id: RecipeId, user_id):
+        super().__init__(
+            f"Review for Recipe with ID '{recipe_id}' by User with ID '{str(user_id)}' not found.",
+            "NOT_FOUND",
+            404,
+            {},
+            {},
+        )
+
+
 class RecipeDomainException(RecipeException):
     """Base exception for recipe domain errors"""
 

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime, timezone, timezone
 from .recipe import RecipeId, UserId
 from ...exceptions import RecipeReviewException
 
@@ -8,6 +9,8 @@ class Review:
     recipe_id: RecipeId
     user_id: UserId
     rating: int
+    created_at: datetime
+    updated_at: datetime
     comment: str = ""
 
     def __eq__(self, other):
@@ -26,3 +29,31 @@ class Review:
             raise RecipeReviewException(
                 message="Comment must not exceed 1000 characters"
             )
+
+    @staticmethod
+    def create(
+        recipe_id: RecipeId,
+        user_id: UserId,
+        rating: int,
+        comment: str = "",
+    ) -> "Review":
+        now = datetime.now(timezone.utc)
+        return Review(
+            recipe_id=recipe_id,
+            user_id=user_id,
+            rating=rating,
+            comment=comment,
+            created_at=now,
+            updated_at=now,
+        )
+
+    def update(self, rating: int, comment: str = "") -> "Review":
+        now = datetime.now(timezone.utc)
+        return Review(
+            recipe_id=self.recipe_id,
+            user_id=self.user_id,
+            rating=rating,
+            comment=comment,
+            created_at=self.created_at,
+            updated_at=now,
+        )

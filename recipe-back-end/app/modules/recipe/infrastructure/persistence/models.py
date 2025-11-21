@@ -40,29 +40,31 @@ recipe_tags = Table(
     Index("idx_recipe_tags_tag_id", "tag_id"),
 )
 
-recipe_reviews = Table(
-    "recipe_reviews",
-    Base.metadata,
-    Column(
-        "recipe_id",
-        Integer,
-        ForeignKey("recipes.id", ondelete="CASCADE"),
-        primary_key=True,
-    ),
-    Column(
-        "user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    ),
-    Column(
-        "reviewed_at",
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now(),
-    ),
-    Column("rating", Integer, nullable=False),
-    Column("comment", Text, nullable=True),
-    Index("idx_recipe_reviews_recipe_id", "recipe_id"),
-    Index("idx_recipe_reviews_user_id", "user_id"),
-)
+
+class ReviewModel(Base):
+    __tablename__ = "recipe_reviews"
+
+    recipe_id: Mapped[int] = mapped_column(
+        ForeignKey("recipes.id", ondelete="CASCADE"), primary_key=True
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Relationships
+    recipe: Mapped["RecipeModel"] = relationship(
+        "RecipeModel", back_populates="reviews"
+    )
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="reviews")
+
 
 recipe_favorites = Table(
     "recipe_favorites",
@@ -183,6 +185,12 @@ class RecipeModel(Base):
 
     view_count: Mapped[int] = mapped_column(
         nullable=False, default=0, index=True  # Para "más vistas"
+    )
+
+    reviews: Mapped[List["ReviewModel"]] = relationship(
+        back_populates="recipe",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     __table_args__ = (

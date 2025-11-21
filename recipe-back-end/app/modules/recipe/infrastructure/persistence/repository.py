@@ -28,7 +28,7 @@ from app.modules.recipe.infrastructure.persistence.models import (
     RecipeMealTypeModel,
     recipe_tags,
     recipe_favorites,
-    recipe_reviews,
+    ReviewModel,
 )
 from app.modules.recipe.application.exceptions import RecipeNotFoundException
 import logging
@@ -82,13 +82,13 @@ class SqlAlchemyRecipeRepository(RecipeRepository):
 
         rating_count_stmt = (
             select(func.count())
-            .select_from(recipe_reviews)
-            .where(recipe_reviews.c.recipe_id == recipe_id.value)
+            .select_from(ReviewModel)
+            .where(ReviewModel.recipe_id == recipe_id.value)
         )
         rating_sum_stmt = (
-            select(func.coalesce(func.sum(recipe_reviews.c.rating), 0))
-            .select_from(recipe_reviews)
-            .where(recipe_reviews.c.recipe_id == recipe_id.value)
+            select(func.coalesce(func.sum(ReviewModel.rating), 0))
+            .select_from(ReviewModel)
+            .where(ReviewModel.recipe_id == recipe_id.value)
         )
         favorite_count_stmt = (
             select(func.count())
@@ -656,11 +656,11 @@ class SqlAlchemyRecipeReviewRepository(RecipeReviewRepository):
     async def exists(self, recipe_id: RecipeId, user_id: UserId) -> bool:
         """Check if review exists for recipe by user."""
         stmt = select(
-            select(recipe_reviews.c.recipe_id)
+            select(ReviewModel.recipe_id)
             .where(
                 and_(
-                    recipe_reviews.c.recipe_id == recipe_id.value,
-                    recipe_reviews.c.user_id == user_id.value,
+                    ReviewModel.recipe_id == recipe_id.value,
+                    ReviewModel.user_id == user_id.value,
                 )
             )
             .exists()
@@ -672,8 +672,8 @@ class SqlAlchemyRecipeReviewRepository(RecipeReviewRepository):
         """Count reviews for a recipe."""
         stmt = (
             select(func.count())
-            .select_from(recipe_reviews)
-            .where(recipe_reviews.c.recipe_id == recipe_id)
+            .select_from(ReviewModel)
+            .where(ReviewModel.recipe_id == recipe_id)
         )
         result = await self.session.execute(stmt)
         return result.scalar() or 0
@@ -711,10 +711,10 @@ class SqlAlchemyRecipeReviewRepository(RecipeReviewRepository):
 
     async def _find_by_recipe_and_user(self, recipe_id: int, user_id: int):
         """Find existing review."""
-        stmt = select(recipe_reviews).where(
+        stmt = select(ReviewModel).where(
             and_(
-                recipe_reviews.c.recipe_id == recipe_id,
-                recipe_reviews.c.user_id == user_id,
+                ReviewModel.recipe_id == recipe_id,
+                ReviewModel.user_id == user_id,
             )
         )
         result = await self.session.execute(stmt)
@@ -722,10 +722,10 @@ class SqlAlchemyRecipeReviewRepository(RecipeReviewRepository):
 
     async def delete(self, recipe_id: RecipeId, user_id: UserId) -> None:
         """Delete a review."""
-        stmt = delete(recipe_reviews).where(
+        stmt = delete(ReviewModel).where(
             and_(
-                recipe_reviews.c.recipe_id == recipe_id.value,
-                recipe_reviews.c.user_id == user_id.value,
+                ReviewModel.recipe_id == recipe_id.value,
+                ReviewModel.user_id == user_id.value,
             )
         )
         await self.session.execute(stmt)
@@ -735,25 +735,25 @@ class SqlAlchemyRecipeReviewRepository(RecipeReviewRepository):
         self, recipe_id: int, user_id: int, rating: int, comment: Optional[str]
     ) -> None:
         """Create new review."""
-        stmt = recipe_reviews.insert().values(
+        review_model = ReviewModel(
             recipe_id=recipe_id,
             user_id=user_id,
             rating=rating,
             comment=comment,
             created_at=datetime.now(timezone.utc),
         )
-        await self.session.execute(stmt)
+        self.session.add(review_model)
 
     async def _update(
         self, recipe_id: int, user_id: int, rating: int, comment: Optional[str]
     ) -> None:
         """Update existing review."""
         stmt = (
-            update(recipe_reviews)
+            update(ReviewModel)
             .where(
                 and_(
-                    recipe_reviews.c.recipe_id == recipe_id,
-                    recipe_reviews.c.user_id == user_id,
+                    ReviewModel.recipe_id == recipe_id,
+                    ReviewModel.user_id == user_id,
                 )
             )
             .values(

@@ -43,6 +43,11 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
+    async def exists_by_phone(self, phone: str) -> bool:
+        """Check if user exists by phone number"""
+        pass
+
+    @abstractmethod
     async def get_recipe_stats(self, id: UserId) -> UserRecipeStats:
         """Get user statistics"""
         pass

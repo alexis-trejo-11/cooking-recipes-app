@@ -12,11 +12,17 @@ from .favorites.user_favorites import (
     GetRecipeFavoritesByUserUseCaseImpl,
 )
 from .favorites.toggle_favorite import ToggleFavoriteUseCaseImpl, IsFavoriteUseCaseImpl
+from .review.get_reviews import (
+    GetUserReviewForRecipeUseCaseImpl,
+    GetRecipeReviewsUseCaseImpl,
+)
 from .review.create_review import CreateReviewUseCaseImpl
+from .review.update_review import UpdateReviewUseCaseImpl
 from .review.delete_review import DeleteReviewUseCaseImpl
 
 __all__ = [
     # Base interfaces
+    # Recipe Use Cases
     "SearchRecipesUseCase",
     "GetFeaturedRecipesUseCase",
     "GetUserRecipesUseCase",
@@ -25,10 +31,15 @@ __all__ = [
     "CreateRecipeUseCase",
     "UpdateRecipeUseCase",
     "RestoreRecipeUseCase",
-    "DeleteRecipeUseCase",
-    "CreateReviewUseCase",
-    "DeleteReviewUseCase",
     "IncrementViewCountUseCase",
+    "DeleteRecipeUseCase",
+    # Review Use Cases
+    "GetRecipeReviewsUseCase",
+    "GetUserReviewForRecipeUseCase",
+    "CreateReviewUseCase",
+    "UpdateReviewUseCase",
+    "DeleteReviewUseCase",
+    # Favorites Use Cases
     "ToggleFavoriteUseCase",
     "IsFavoriteUseCase",
     "GetRecipeFavoritesByUserUseCase",
@@ -46,6 +57,9 @@ __all__ = [
     "GetRecipeFavoritesByUserUseCaseImpl",
     "ToggleFavoriteUseCaseImpl",
     "IsFavoriteUseCaseImpl",
+    "GetUserReviewForRecipeUseCaseImpl",
+    "GetRecipeReviewsUseCaseImpl",
     "CreateReviewUseCaseImpl",
+    "UpdateReviewUseCaseImpl",
     "DeleteReviewUseCaseImpl",
 ]

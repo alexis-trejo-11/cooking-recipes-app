@@ -162,7 +162,7 @@ async def login(
         401: {"description": "Invalid or expired refresh token"},
     },
 )
-@rate_limit("moderate")
+@rate_limit("api")
 async def refresh_token(
     refresh_request: RefreshTokenRequest,
     use_case: RefreshTokenUseCaseDep,

@@ -226,6 +226,37 @@ class RecipeReviewRepository(ABC):
     """
 
     @abstractmethod
+    async def find_by_recipe_id(
+        self, recipe_id: RecipeId, page_request: PaginationParams
+    ) -> Page[Review]:
+        """
+        Find reviews by recipe ID with pagination.
+
+        Args:
+            recipe_id: Recipe identifier
+            page_request: Pagination parameters
+
+        Returns:
+            Paginated list of reviews for the recipe
+        """
+        pass
+
+    @abstractmethod
+    async def find_by_recipe_id_and_user_id(
+        self, recipe_id: RecipeId, user_id: UserId
+    ) -> Optional[Review]:
+        """
+        Find a review by recipe ID and user ID.
+
+        Args:
+            recipe_id: Recipe identifier
+            user_id: User identifier
+        Returns:
+            Review entity if found, None otherwise
+        """
+        pass
+
+    @abstractmethod
     async def exists(self, recipe_id: RecipeId, user_id: UserId) -> bool:
         """
         Check if a user has reviewed a recipe.

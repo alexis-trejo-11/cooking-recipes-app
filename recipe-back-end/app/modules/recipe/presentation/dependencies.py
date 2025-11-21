@@ -24,36 +24,47 @@ from app.modules.recipe.domain.interfaces import (
 )
 from app.modules.recipe.application.use_cases import (
     # Interfaces
-    CreateRecipeUseCase,
     GetRecipeUseCase,
-    RestoreRecipeUseCase,
     SearchRecipesUseCase,
-    CreateReviewUseCase,
-    DeleteReviewUseCase,
-    IncrementViewCountUseCase,
-    ToggleFavoriteUseCase,
     GetUserRecipesUseCase,
     GetFeaturedRecipesUseCase,
+    CreateRecipeUseCase,
     UpdateRecipeUseCase,
+    RestoreRecipeUseCase,
     DeleteRecipeUseCase,
+    DeleteRecipeUseCaseImpl,
+    RestoreRecipeUseCaseImpl,
+    IncrementViewCountUseCase,
+    # Review Use Cases
+    CreateReviewUseCase,
+    GetRecipeReviewsUseCase,
+    GetUserReviewForRecipeUseCase,
+    DeleteReviewUseCase,
+    UpdateReviewUseCase,
+    # Favorites Use Cases
+    ToggleFavoriteUseCase,
     GetRecipeFavoritesByUserUseCase,
     GetUserFavoritesRecipesUseCase,
     # Implementations
+    # Recipe Use Cases
+    GetUserRecipesUseCaseImpl,
+    SearchRecipesUseCaseImpl,
+    GetRecipeUseCaseImpl,
     GetFeaturedRecipesUseCaseImpl,
+    IncrementViewCountUseCaseImpl,
     CreateRecipeUseCaseImpl,
+    UpdateRecipeUseCaseImpl,
+    # Favorites Use Cases
     IsFavoriteUseCaseImpl,
     GetUserFavoritesRecipesUseCaseImpl,
-    CreateReviewUseCaseImpl,
-    DeleteReviewUseCaseImpl,
-    IncrementViewCountUseCaseImpl,
-    UpdateRecipeUseCaseImpl,
-    DeleteRecipeUseCaseImpl,
-    RestoreRecipeUseCaseImpl,
-    GetRecipeUseCaseImpl,
-    SearchRecipesUseCaseImpl,
-    GetUserRecipesUseCaseImpl,
-    ToggleFavoriteUseCaseImpl,
     GetRecipeFavoritesByUserUseCaseImpl,
+    ToggleFavoriteUseCaseImpl,
+    # Review Use Cases
+    GetUserReviewForRecipeUseCaseImpl,
+    GetRecipeReviewsUseCaseImpl,
+    CreateReviewUseCaseImpl,
+    UpdateReviewUseCaseImpl,
+    DeleteReviewUseCaseImpl,
 )
 from app.modules.recipe.application.dtos import RecipeSearchRequest
 from app.modules.auth.presentation.app_depencies import UserRepositoryDep
@@ -316,6 +327,41 @@ async def get_get_recipe_favorites_by_user_use_case(
 
 
 # Use Case Dependencies - Reviews
+async def get_get_user_review_for_recipe_use_case(
+    recipe_review_repository: Annotated[
+        RecipeReviewRepository, Depends(get_recipe_review_repository)
+    ],
+) -> GetUserReviewForRecipeUseCase:
+    """
+    Dependency for GetUserReviewForRecipeUseCase.
+
+    Args:
+        recipe_repository: Repository for recipe operations
+        recipe_review_repository: Repository for review operations
+
+    Returns:
+        GetUserReviewForRecipeUseCase: Use case for retrieving user's review for a recipe
+    """
+    return GetUserReviewForRecipeUseCaseImpl(recipe_review_repository)
+
+
+async def get_get_recipe_reviews_use_case(
+    recipe_review_repository: Annotated[
+        RecipeReviewRepository, Depends(get_recipe_review_repository)
+    ],
+) -> GetRecipeReviewsUseCase:
+    """
+    Dependency for GetRecipeReviewsUseCase.
+
+    Args:
+        recipe_review_repository: Repository for review operations
+
+    Returns:
+        GetRecipeReviewsUseCase: Use case for retrieving reviews for a recipe
+    """
+    return GetRecipeReviewsUseCaseImpl(recipe_review_repository)
+
+
 async def get_create_review_use_case(
     recipe_repository: Annotated[RecipeRepository, Depends(get_recipe_repository)],
     recipe_review_repository: Annotated[
@@ -333,6 +379,25 @@ async def get_create_review_use_case(
         CreateReviewUseCase: Use case for creating reviews
     """
     return CreateReviewUseCaseImpl(recipe_repository, recipe_review_repository)
+
+
+async def get_update_review_use_case(
+    recipe_repository: Annotated[RecipeRepository, Depends(get_recipe_repository)],
+    recipe_review_repository: Annotated[
+        RecipeReviewRepository, Depends(get_recipe_review_repository)
+    ],
+) -> UpdateReviewUseCase:
+    """
+    Dependency for UpdateReviewUseCase.
+
+    Args:
+        recipe_repository: Repository for recipe operations
+        recipe_review_repository: Repository for review operations
+
+    Returns:
+        UpdateReviewUseCase: Use case for updating reviews
+    """
+    return UpdateReviewUseCaseImpl(recipe_repository, recipe_review_repository)
 
 
 async def get_delete_review_use_case(
@@ -464,6 +529,9 @@ RestoreRecipeUseCaseDep = Annotated[
 CreateReviewUseCaseDep = Annotated[
     CreateReviewUseCase, Depends(get_create_review_use_case)
 ]
+UpdateReviewUseCaseDep = Annotated[
+    UpdateReviewUseCase, Depends(get_update_review_use_case)
+]
 DeleteReviewUseCaseDep = Annotated[
     DeleteReviewUseCase, Depends(get_delete_review_use_case)
 ]
@@ -490,6 +558,12 @@ GetUserFavoritesRecipesUseCaseDep = Annotated[
 ]
 GetRecipeFavoritesByUserUseCaseDep = Annotated[
     GetRecipeFavoritesByUserUseCase, Depends(get_get_recipe_favorites_by_user_use_case)
+]
+GetUserReviewForRecipeUseCaseDep = Annotated[
+    GetUserReviewForRecipeUseCase, Depends(get_get_user_review_for_recipe_use_case)
+]
+GetRecipeReviewsUseCaseDep = Annotated[
+    GetRecipeReviewsUseCase, Depends(get_get_recipe_reviews_use_case)
 ]
 IsFavoriteUseCaseDep = Annotated[
     IsFavoriteUseCaseImpl, Depends(get_is_favorite_use_case)

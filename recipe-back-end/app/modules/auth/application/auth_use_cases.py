@@ -64,6 +64,12 @@ class SignUpUseCase:
                 f"User with email {request.email} already exists"
             )
 
+        if request.phone_number:
+            if await self.user_repository.exists_by_phone(request.phone_number):
+                raise UserAlreadyExistsException(
+                    f"User with phone number {request.phone_number} already exists"
+                )
+
         try:
             user = User.create(
                 first_name=request.first_name,
