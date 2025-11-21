@@ -36,6 +36,17 @@
           (deleteRequested)="onDeleteRecipe()"
         />
       </div>
+
+      <!-- Review Modal -->
+      @if (recipe()) {
+      <app-review-modal
+        [recipeId]="recipe()!.id"
+        [isOpen]="showReviewModal()"
+        (closed)="onReviewModalClosed()"
+        (reviewSubmitted)="onReviewSubmitted($event)"
+        (reviewDeleted)="onReviewDeleted($event)"
+      />
+      }
     </div>
   </div>
   } @else {

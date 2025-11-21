@@ -10,6 +10,8 @@ import { RecipeStats } from './components/recipe-stats/recipe-stats';
 import { RecipeIngredients } from './components/recipe-ingredients/recipe-ingredients';
 import { RecipeInstructions } from './components/recipe-instructions/recipe-instructions';
 import { RecipeSidebar } from './components/recipe-sidebar/recipe-sidebar';
+import { ReviewModal } from './components/review-modal/review-modal';
+import { Review } from '../../../../models/review_models';
 
 interface RecipeStat {
   icon: string;
@@ -31,6 +33,7 @@ interface RecipeStat {
     RecipeIngredients,
     RecipeSidebar,
     RecipeInstructions,
+    ReviewModal,
   ],
   templateUrl: './recipe-detail.html',
   styleUrls: ['./recipe-detail.scss'],
@@ -45,6 +48,7 @@ export class RecipeDetail implements OnInit {
   loading = signal(true);
   scaledServings = signal(1);
   isFavorite = signal(false);
+  showReviewModal = signal(false);
 
   ngOnInit(): void {
     this.loadRecipe();
@@ -110,8 +114,21 @@ export class RecipeDetail implements OnInit {
   }
 
   onOpenReview(): void {
-    // Implementar modal de review
-    console.log('Abrir modal de review');
+    this.showReviewModal.set(true);
+  }
+
+  onReviewModalClosed(): void {
+    this.showReviewModal.set(false);
+  }
+
+  onReviewSubmitted(review: Review): void {
+    console.log('Review submitted:', review);
+    // TODO: Update the UI to reflect the new review
+  }
+
+  onReviewDeleted(reviewId: string): void {
+    console.log('Review deleted:', reviewId);
+    // TODO: Update the UI to reflect the deleted review
   }
 
   onEditRecipe(): void {

@@ -1,0 +1,126 @@
+<div class="modal-overlay" [class.open]="isOpen()" (click)="close()">
+  <div class="model-content" (click)="$event.stopPropagation()">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h2 class="modal-title">{{ modalTitle }}</h2>
+      <button class="close-btn" (click)="close()" [disabled]="submitting() || deleting()">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+
+      <!-- Loading State -->
+      @if (loading()) {
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading your review...</p>
+      </div>
+      }
+
+      <!-- Review Form -->
+      @else {
+      <div class="review-form">
+        <!-- User Info -->
+        <div class="user-info">
+          <div class="user-avatar">
+            {{ currentUser?.fullName?.charAt(0)?.toUpperCase() || 'U' }}
+          </div>
+          <div class="user-details">
+            <p class="user-name">{{ currentUser?.fullName || 'User' }}</p>
+            <p class="review-label">Your review will be public</p>
+          </div>
+        </div>
+
+        <!-- Rating Stars -->
+        <div class="rating-section">
+          <label class="rating-label">Your Rating *</label>
+          <div class="stars-container">
+            @for (star of [1,2,3,4,5]; track star) {
+            <button
+              type="button"
+              class="star-btn"
+              (click)="setRating(star)"
+              (mouseenter)="setHoverRating(star)"
+              (mouseleave)="setHoverRating(0)"
+              [class.active]="star <= (hoverRating() || rating())"
+              [disabled]="submitting() || deleting()"
+            >
+              <svg class="star-icon" viewBox="0 0 20 20">
+                <path
+                  d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"
+                />
+              </svg>
+            </button>
+            }
+          </div>
+          <div class="rating-hint">
+            @if (rating() === 0) {
+            <span class="hint-text">Select a rating</span>
+            } @else {
+            <span class="rating-text">{{ getRatingText(rating()) }}</span>
+            }
+          </div>
+        </div>
+
+        <!-- Comment Textarea -->
+        <div class="comment-section">
+          <label class="comment-label">Your Review *</label>
+          <textarea
+            [(ngModel)]="comment"
+            class="comment-textarea"
+            placeholder="Share your experience with this recipe... What did you like? Any suggestions?"
+            rows="5"
+            [disabled]="submitting() || deleting()"
+          ></textarea>
+          <div class="character-count">{{ comment().length }}/500</div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <!-- Delete Button (only if review exists) -->
+          @if (userReview()) {
+          <button
+            type="button"
+            class="btn btn-danger"
+            (click)="deleteReview()"
+            [disabled]="submitting() || deleting()"
+          >
+            @if (deleting()) {
+            <div class="button-spinner"></div>
+            }
+            {{ deleting() ? 'Deleting...' : 'Delete Review' }}
+          </button>
+          }
+
+          <div class="right-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="close()"
+              [disabled]="submitting() || deleting()"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="submitReview()"
+              [disabled]="!canSubmit"
+            >
+              @if (submitting()) {
+              <div class="button-spinner"></div>
+              }
+              {{ submitButtonText }}
+            </button>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+</div>
