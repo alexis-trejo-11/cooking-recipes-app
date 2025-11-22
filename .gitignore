@@ -146,6 +146,10 @@ celerybeat.pid
 .env.*.local
 *.env
 
+# HTTPS certificates
+*cert.pem
+*key.pem
+
 # Alembic
 # Keep alembic/ folder but ignore generated migration files if needed
 # alembic/versions/*.pyc
