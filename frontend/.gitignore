@@ -1,0 +1,4 @@
+# Environment files (may contain sensitive/flexible config)
+.env
+.env.*
+!.env.example

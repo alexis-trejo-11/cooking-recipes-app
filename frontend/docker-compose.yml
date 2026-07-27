@@ -1,0 +1,15 @@
+services:
+  web:
+    # Build locally, or set IMAGE to pull a prebuilt image (as CI/deploy does).
+    build:
+      context: .
+    image: ${IMAGE:-cooking-recipes-frontend:latest}
+    environment:
+      # Runtime config (no rebuild needed when these change).
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:8080/api/v1}
+      BASE_URL: ${BASE_URL:-http://localhost:4200}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
