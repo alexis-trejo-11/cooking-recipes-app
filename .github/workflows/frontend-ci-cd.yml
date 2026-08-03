@@ -16,7 +16,10 @@
 #   - GITHUB_TOKEN is provided by Actions (push to GHCR); no need to create it.
 #   - No repository Variables required for the image build.
 #   - App runtime env (API_BASE_URL, ALLOWED_HOSTS, …) lives on the deploy
-#     host .env — not in GitHub Actions. See frontend/.env.example.
+#     host .env — not in GitHub Actions. PORT is set in compose.
+#     See frontend/.env.example.
+#
+# Image: ghcr.io/alexis-trejo-11/cooking-recipes-web
 #
 name: Frontend CI-CD
 
@@ -38,7 +41,7 @@ permissions:
   actions: write
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}/frontend
+  IMAGE_NAME: ghcr.io/alexis-trejo-11/cooking-recipes-web
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -184,8 +187,7 @@ jobs:
 
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
-          export IMAGE="${IMAGE}:${IMAGE_TAG}"
-          make refresh
+          make refresh IMAGE="$IMAGE" IMAGE_TAG="$IMAGE_TAG"
 
           docker logout ghcr.io || true
           echo "Deploy finished."

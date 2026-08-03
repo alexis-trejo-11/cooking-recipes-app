@@ -15,7 +15,10 @@
 # Notes:
 #   - GITHUB_TOKEN is provided by Actions (push to GHCR); no need to create it.
 #   - App runtime env (DATABASE_URL, JWT_SECRET_KEY, Redis, …) lives on the
-#     deploy host .env — not in GitHub Actions. See backend/.env.example.
+#     deploy host .env — not in GitHub Actions. SERVER_PORT is set in compose.
+#     See backend/.env.example.
+#
+# Image: ghcr.io/alexis-trejo-11/cooking-recipes-api
 #
 name: Backend CI-CD
 
@@ -37,10 +40,10 @@ permissions:
   actions: write
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}/backend
+  IMAGE_NAME: ghcr.io/alexis-trejo-11/cooking-recipes-api
   # Dummy values so Settings() / sql_session can import during CI.
   # Not used for production — real secrets come from the deploy host / runtime.
-  DATABASE_URL: sqlite+aiosqlite:///:memory:
+  DATABASE_URL: "sqlite+aiosqlite:///:memory:"
   JWT_SECRET_KEY: ci-only-not-for-production
   RATE_LIMIT_ENABLED: "false"
   DEBUG: "false"
@@ -215,8 +218,7 @@ jobs:
 
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
-          export IMAGE="${IMAGE}:${IMAGE_TAG}"
-          make refresh
+          make refresh IMAGE="$IMAGE" IMAGE_TAG="$IMAGE_TAG"
 
           docker logout ghcr.io || true
           echo "Deploy finished."

@@ -23,12 +23,12 @@ RUN mkdir -p logs alembic/versions
 # secrets — do NOT bake them into the image (they are gitignored and would
 # break CI builds).
 
-# Exponer puertos
+# Default develop ports; production overrides SERVER_PORT via compose.
 EXPOSE 8080 8443
 
-# Salud de la aplicación
+# Salud de la aplicación ($$ so SERVER_PORT expands at runtime, not build)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost:$${SERVER_PORT:-8080}/health || exit 1
 
 COPY start.sh .
 RUN chmod +x start.sh
